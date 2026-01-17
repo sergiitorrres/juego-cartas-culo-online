@@ -1,0 +1,29 @@
+{
+  "name": "juego-cartas-culo-online",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+  "install-all": "npm install && cd client && npm install && cd ../server && npm install",
+  "server": "cd server && npm run dev",
+  "client": "cd client && npm run dev",
+  "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sergiitorrres/juego-cartas-culo-online.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sergiitorrres/juego-cartas-culo-online/issues"
+  },
+  "homepage": "https://github.com/sergiitorrres/juego-cartas-culo-online#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
