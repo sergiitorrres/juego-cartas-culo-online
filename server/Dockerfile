@@ -1,7 +1,9 @@
-FROM node:22-alpine
+FROM node:22.13.1-alpine
 
-WORKDIR /server
+WORKDIR /app
+COPY package*.json /app
+RUN npm install
 COPY . .
-RUN yarn install --production
+EXPOSE	3000
 
-CMD ["node", "/server/index.js"]
+CMD ["npm", "start"]
