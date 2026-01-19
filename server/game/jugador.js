@@ -1,8 +1,8 @@
-import constantes from "./constantes"
+const constantes = require("./constantes");
 
 class Jugador {
-    constructor(socket_id, nombre) {
-        this.id = socket_id
+    constructor(socketId, nombre) {
+        this.id = socketId
         this.nombre = nombre
         this.listo = false
 
@@ -12,7 +12,9 @@ class Jugador {
         this.haPasado = false
         this.posicionFinal = null
         this.puntuacion = null
+        
     }
+    
 }
 
 module.exports = Jugador
