@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  app:
+    container_name: app
+    build: ./server
+    restart: always
+    ports:
+      - 3000:3000
+  tunnel:
+    container_name: tunnel
+    image: cloudflare/cloudflared
+    command: tunnel --no-autoupdate run --token eyJhIjoiMTE0NmM0OTE1Mzg4NjZhMzVkNDM2ZTEzZjQ4YWM5MmQiLCJ0IjoiZTM4ZDNkNGItNTMzYy00ZmQwLWEyMTUtODc0NTVmNjgwM2VkIiwicyI6Ik1XUXpNekl5WXpndE0yUTFPUzAwWVRVd0xUaGhNV1l0WldGbVpEUmhZelkwTkdZeCJ9
+    restart: always
+    network_mode: service:app
