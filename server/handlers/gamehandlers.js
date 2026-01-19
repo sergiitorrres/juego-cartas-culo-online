@@ -1,0 +1,1 @@
+// Logica de las cartas (barajar, validar turno, calcular ganador)

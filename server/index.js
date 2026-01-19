@@ -1,20 +1,32 @@
+const express = require('express');
 const http = require('http');
+const { Server } = require("socket.io");
+const cors = require('cors');
+const roomHandlers = require("./handlers/roomhandlers");
+const gameHandlers = require("./handlers/gamehandlers");
 
-// Creamos el servidor
-const server = http.createServer((req, res) => {
-    // 1. Log para que tú lo veas en la terminal de la Raspberry
-    console.log(`[CONEXIÓN] ¡Alguien ha entrado desde ${req.socket.remoteAddress}!`);
+// Esta cosa es para peticiones normales, no necesita estar siempre enchufado
+const app = express();
+app.use(cors());
 
-    // 2. Preparamos la respuesta para el navegador (Cabeceras)
-    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+const server = http.createServer(app);
 
-    // 3. Enviamos el mensaje al usuario
-    res.end('¡Felicidades SysAdmin! Tu servidor Docker en la Raspberry Pi funciona 🚀');
-});
+// Esta cosa es la que escucha los eventos
+const io = new Server(server, {
+    cors: {
+    origin: "*", // Cambiar por dominio real
+    methods: ["GET", "POST"]
+  }});
 
-// Arrancamos el servidor
-// IMPORTANTE: '0.0.0.0' es vital para que Docker permita conexiones desde fuera del contenedor
-server.listen(3000, '0.0.0.0', () => {
-    console.log('--- Servidor Listo ---');
-    console.log('Escuchando en el puerto 3000');
+io.on("connection", (socket) => {
+    console.log(`Usuario conectado: ${socket.id}`);
+    roomHandlers(io, socket);
+    });
+
+io.on("disconnect", (socket) => {
+    console.log(`Usuario desconectado: ${socket.id}`);
+    });
+
+server.listen(3000, () => {
+    console.log("Servidor escuchando en el puerto 3000");
 });
