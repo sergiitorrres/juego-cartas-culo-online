@@ -8,6 +8,7 @@ module.exports = {
   },
   ESTADOS: {
     LOBBY: 'LOBBY',
+    REPARTIENDO: 'REPARTIENDO',
     INTERCAMBIO: 'INTERCAMBIO',
     JUGANDO: 'JUGANDO',
     RESUMEN: 'RESUMEN'
