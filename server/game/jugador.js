@@ -15,6 +15,13 @@ class Jugador {
         
     }
     
+    removeCarta(pos) {
+        this.cartas.splice(pos, 1)
+    }
+
+    setPosFinal(pos) {
+        this.posicionFinal = pos
+    }
 }
 
 module.exports = Jugador

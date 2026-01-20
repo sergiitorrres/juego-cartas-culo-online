@@ -29,6 +29,10 @@ class Sala {
         this.jugadores.push(nuevoJugador);
         return nuevoJugador;
     }
+
+    updateTurnoActual() {
+        return ++this.turnoActual % this.jugadores.length;
+    }
 }
 
 module.exports = Sala
