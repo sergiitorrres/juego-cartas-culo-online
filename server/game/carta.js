@@ -5,7 +5,7 @@ class Carta {
         this.fuerza = (valor + 12 - 3) % 12
 
         this.img = img
-        this.id = '${this.palo}_${this.valor}'
+        this.id = `${this.palo}_${this.valor}`
     }
 }
 

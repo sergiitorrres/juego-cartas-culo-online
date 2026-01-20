@@ -7,10 +7,10 @@
     "doc": "docs"
   },
   "scripts": {
-  "install-all": "npm install && cd client && npm install && cd ../server && npm install",
-  "server": "cd server && npm run dev",
-  "client": "cd client && npm run dev",
-  "dev": "concurrently \"npm run server\" \"npm run client\""
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
   },
   "repository": {
     "type": "git",
@@ -25,5 +25,8 @@
   "homepage": "https://github.com/sergiitorrres/juego-cartas-culo-online#readme",
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.8.3"
   }
 }

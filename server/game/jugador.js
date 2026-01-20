@@ -8,7 +8,7 @@ class Jugador {
 
         // ESTADO PARTIDA
         this.rol = constantes.ROLES.NEUTRO
-        this.cartas = []
+        this.mano = []
         this.haPasado = false
         this.posicionFinal = null
         this.puntuacion = null
