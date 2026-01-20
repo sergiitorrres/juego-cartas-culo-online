@@ -7,7 +7,7 @@ module.exports = (io, socket) => {
     socket.on("iniciar_partida", () => {
         const salaId = socket.data.salaId;
         const sala = rooms[salaId];
-
+        console.log("Intentando iniciar partida1")
         if (!sala) return;
 
         const resultado = sala.iniciar_partida();
@@ -15,7 +15,7 @@ module.exports = (io, socket) => {
         if (resultado.error) {
             return socket.emit("error", { mensaje: resultado.error });
         }
-
+    console.log("Intentando iniciar partida2")
         sala.jugadores.forEach(j => {
             const s = io.sockets.sockets.get(j.id);
             if (s) {
@@ -27,7 +27,7 @@ module.exports = (io, socket) => {
                 });
             }
         });
-
+        console.log("Intentando iniciar partida3")
         io.to(salaId).emit("turno_jugador", { turno: resultado.turnoInicial });
         console.log(`Partida iniciada en ${salaId}`);
     });
@@ -42,6 +42,10 @@ module.exports = (io, socket) => {
 
         const mesa = sala.mesa
         const jugador = sala.jugadores.find(j => j.id === socket.id);
+
+        if (jugador.haPasado) {
+            return socket.emit("error", { mensaje: "Has pasado turno, debes esperar a que se limpie la mesa" });
+        }
 
         const cartasJugadas = indices.map(i => jugador.mano[i]).filter(c => c);
         if (cartasJugadas.length === 0) return;
@@ -114,7 +118,6 @@ module.exports = (io, socket) => {
         let nextJ = sala.nextJugador();
 
         if (plin && nextJ) {
-            sala.nextJugador(); 
             nextJ = sala.nextJugador(); 
             io.to(salaId).emit("salto_turno", {});
         }
@@ -139,7 +142,7 @@ module.exports = (io, socket) => {
         }
 
         const jugador = sala.jugadores.find(j => j.id === socket.id);
-        jugador.haPasado = true;
+        jugador.setHaPasado(true);
         io.to(salaId).emit("jugador_paso_notif", {jugadorId: socket.id})
 
         let nextJ = sala.nextJugador()
