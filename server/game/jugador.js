@@ -11,7 +11,7 @@ class Jugador {
         this.mano = []
         this.haPasado = false
         this.posicionFinal = -1
-        this.puntuacion = null
+        this.puntuacion = 0
         
     }
     
@@ -22,6 +22,8 @@ class Jugador {
     setRol(rol) { this.rol = rol }
 
     setHaPasado(bool) { this.haPasado = bool }
+
+    addPtos(ptos) {this.puntuacion += ptos }
 }
 
 module.exports = Jugador

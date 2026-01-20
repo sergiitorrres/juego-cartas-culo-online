@@ -68,20 +68,60 @@ class Sala {
     nextJugador() {
         turnoActual = (turnoActual + 1) % jugadores.length
         let nextJ = jugadores[turnoActual]
-        while(nextJ.haPasado || nextJ.posicionFinal != null) {
+        while(nextJ.haPasado || nextJ.posicionFinal < 0) {
             turnoActual = (turnoActual + 1) % jugadores.length
             nextJ = jugadores[turnoActual]
         }
         return nextJ
     }
 
-    checkIfTurn(id) {
-        return id == this.jugadores[this.turnoActual].id
-    }
+    checkIfTurn(id) { return id == this.jugadores[this.turnoActual].id }
 
     jugadoresResetPass() {
         this.jugadores.forEach(j => {
             j.setHaPasado(false) 
+        });
+    }
+
+    getRankings() {
+        let ranking = ["Presi", "Vice_Presi", "Vice_Culo", "Culo"]
+        let ptos = 2 + this.ronda * 2
+        if(ronda > 2) ptos = 6
+        
+        this.jugadores.forEach(j => {
+            if(j.rol == constantes.ROLES.PRESIDENTE) {
+                ranking[0] = j.id;
+                j.addPtos(ptos)
+            } else if (j.rol == constantes.ROLES.VICE_PRESIDENTE) {
+                ranking[1] = j.id
+                j.addPtos(ptos/2)
+            } else if (j.rol == constantes.ROLES.VICE_CULO) {
+                ranking[2] = j.id
+                j.add(-ptos/2)
+            } else if (j.rol == constantes.ROLES.CULO) {
+                ranking[3] = j.id
+                j.add(-ptos)
+            }
+        });
+
+        return ranking
+    }
+
+    startNewRound() {
+        this.baraja.barajar()
+        this.ronda++
+        
+        const totalCartas = this.baraja.cartas.length;
+        const cartasPorJugador = Math.floor(totalCartas / numJugadores);
+
+        this.jugadores.forEach(jugador => {
+            jugador.mano = this.baraja.robar(cartasPorJugador)
+            // ordena cartas
+            jugador.mano.sort((a,b) => a.fuerza - b.fuerza)
+
+            // -- Reset otros atributos --
+            jugador.setPosFinal(-1)
+            jugador.setHaPasado(false)
         });
     }
 }

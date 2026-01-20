@@ -97,8 +97,15 @@ module.exports = (io, socket) => {
                     }
                 })
                 jculo.setRol(ROLES.CULO)
-                // ------ INICIAR NUEVA RONDA ------ !!! TO DO !!!
-                // return ?
+                // ------ INICIAR NUEVA RONDA ------
+                let ranking = sala.getRankings()
+                io.to(salaId).emit("fin_ronda", {presi: ranking[0], vice_presi: ranking[1], vice_culo: ranking[2], culo: ranking[3]})
+                sala.startNewRound()
+
+                sala.jugadores.forEach(j => {
+                    io.to(j.id).emit("ronda_iniciada", {misCartas: j.mano})
+                })
+                return
             } else {
                 if(jugador.posicionFinal == 1) {
                     jugador.setRol(ROLES.PRESIDENTE)
