@@ -1,157 +1,214 @@
 // Logica de las cartas (barajar, validar turno, calcular ganador)
-
+const { rooms } = require("../store");
 const  { ROLES } = require("../game/constantes");
 
 module.exports = (io, socket) => {
-    
+
+    socket.on("iniciar_partida", () => {
+        const salaId = socket.data.salaId;
+        const sala = rooms[salaId];
+
+        if (!sala) return;
+
+        const resultado = sala.iniciar_partida();
+
+        if (resultado.error) {
+            return socket.emit("error", { mensaje: resultado.error });
+        }
+
+        sala.jugadores.forEach(j => {
+            const s = io.sockets.sockets.get(j.id);
+            if (s) {
+                s.emit("ronda_iniciada", { 
+                    misCartas: j.mano,
+                    jugadores: sala.jugadores.map(p => ({
+                        id: p.id, nombre: p.nombre, numCartas: p.mano.length, rol: p.rol
+                    }))
+                });
+            }
+        });
+
+        io.to(salaId).emit("turno_jugador", { turno: resultado.turnoInicial });
+        console.log(`Partida iniciada en ${salaId}`);
+    });
+
     socket.on("lanzar_cartas", (data, callback) => {
         const {indices, salaId} = data
         const sala = rooms[salaId]
 
-        if(!sala.checkIfTurn(socket.id)) {
-            socket.emit("error", {mensaje: "No es tu turno"})
-            return;
+        if(!sala || !sala.checkIfTurn(socket.id)) {
+            return socket.emit("error", {mensaje: "No es tu turno"})
         }
 
         const mesa = sala.mesa
-        let jugador
-        sala.jugadores.forEach(j => {
-            if(j.id === socket.id) jugador = j 
-        });
+        const jugador = sala.jugadores.find(j => j.id === socket.id);
 
-        let mesa_limpia = indices.length == 1 && jugador.mano[indices[0]].id == "oros_2"
+        const cartasJugadas = indices.map(i => jugador.mano[i]).filter(c => c);
+        if (cartasJugadas.length === 0) return;
 
-        if(!mesa_limpia) {
-            if(indices.length != mesa.cantidad) { // CANTIDAD INSUFICIENTE
-                if(mesa.cantidad < 1) {
-                    // Era la primera tirada
-                    mesa.setCantidad(indices.length)
-                } else {
-                    // No puedes hacer eso
-                    socket.emit("error", {mensaje : "Hay " + mesa.cantidad + " cartas pero has tirado " + indices.length})
-                    return;
-                }
-            } else if(jugador.mano[indices[0]].fuerza < mesa.fuerzaActual) { // NECESITA CARTAS MAS ALTAS
-                // No puedes hacer eso
-                socket.emit("error", {mensaje: "La carta en mesa es más alta"})
-                return;
+        const esDosDeOros = (cartasJugadas.length === 1 && cartasJugadas[0].palo === 'oros' && cartasJugadas[0].valor === 2);
+        let limpiaMesa = esDosDeOros;
+
+        if(!limpiaMesa && mesa.cartasEnMesa.length > 0) {
+            if (cartasJugadas.length !== mesa.cantidad) {
+                return socket.emit("error", { mensaje: `Debes tirar ${mesa.cantidad} cartas` });
+            }
+            if (cartasJugadas[0].fuerza < mesa.fuerzaActual) {
+                return socket.emit("error", { mensaje: "Tus cartas son muy bajas" });
             }
         }
-
-        // Jugada casi Valida
-        let cartas = []
-        indices.sort((a, b) => b - a) // mayor a menor
-        indices.forEach(i => {
-            cartas.push(jugador.mano[i])
-        })
 
         // Comprobar que todas tienen misma fuerza
-        let f = cartas[0].fuerza
-        for(let i = 1; i < cartas.length; i++) {
-            if(f != cartas[i].fuerza) {
-                // No puedes hacer eso
-                socket.emit("error", {mensaje: "Las cartas son distintas"})
+        let f = cartasJugadas[0].fuerza
+        if (!cartasJugadas.every(c => c.fuerza === f)) {
+            return socket.emit("error", { mensaje: "Las cartas deben ser del mismo valor" });
+        }
+        
+        const plin = (!limpiaMesa && mesa.cartasEnMesa.length > 0 && mesa.fuerzaActual === f);
+        
+        mesa.setFuerzaActual(f);
+        mesa.setCartas(cartasJugadas);
+        mesa.setCantidad(cartasJugadas.length);
+        mesa.setUltimoJugador(jugador);
+        
+        jugador.mano = jugador.mano.filter(c => !cartasJugadas.includes(c));
+
+        // Avisar a todos
+        io.to(salaId).emit("jugada_valida", { 
+            jugadorId: socket.id, 
+            cartas: cartasJugadas
+        });
+
+        // Si el jugador se queda sin cartas
+        if (jugador.mano.length === 0) {
+            sala.posiciones = (sala.posiciones || 0) + 1;
+            jugador.posicionFinal = sala.posiciones;
+
+            io.to(salaId).emit("jugador_termino", { 
+                jugadorId: socket.id, 
+                posicion: jugador.posicionFinal 
+            });
+
+            // Verificar si acaba la ronda
+            const activos = sala.jugadores.filter(j => j.mano.length > 0);
+            if (activos.length <= 1) {
+                finalizarRonda(sala, io, salaId);
+                return;
+            }
+            limpiaMesa = true;
+        }
+
+        // Si hay que limpiar mesa
+        if (limpiaMesa) {
+            mesa.reset();
+            sala.jugadoresResetPass();
+            io.to(salaId).emit("mesa_limpia", { motivo: esDosDeOros ? "2 de Oros" : "Jugador terminó" });
+            
+            // Si tiro 2 de oros y sigue jugando, repite turno
+            if (esDosDeOros && jugador.mano.length > 0) {
+                io.to(salaId).emit("turno_jugador", { turno: jugador.id });
                 return;
             }
         }
-        
-        const plin = mesa.setFuerzaActual(f)
-        mesa.setCartas(cartas)
-        indices.forEach(i => {
-            jugador.removeCarta(i)
-        })
 
-        // Avisar a todos de cartas jugadas
-        io.to(salaId).emit("jugada_valida", 
-            {   jugadorId: socket.id, 
-                cartas: cartas
-        })
-        mesa.setUltimoJugador(jugador)
+        let nextJ = sala.nextJugador();
 
-        // CONTINUAR TURNOS
-        if(mesa_limpia) {
-            mesa.reset()
-            sala.jugadoresResetPass()
-            io.to(salaId).emit("mesa_limpia", {})
-        }
-        // ¿? JUGADOR TERMINA
-        if(jugador.mano.length == 0) {
-            // El jugador ha terminado
-            if(!mesa_limpia) { // Evita repetir
-                mesa.reset()
-                sala.jugadoresResetPass()
-                io.to(salaId).emit("mesa_limpia", {})
-                mesa_limpia = true
-            }
-
-            jugador.setPosFinal(mesa.jugadorTerminado())
-            io.to(salaId).emit("jugador_termino", {jugadorId: socket.id, posicion: jugador.posicionFinal})
-            
-            if(mesa.jugadorTerminado + 1 == sala.jugadores.length) { // FIN RONDA
-                jugador.setRol(ROLES.VICE_CULO)
-                // SELECCIONAR QUIEN ES CULO
-                let jculo = null
-                sala.jugadores.forEach(j => {
-                    if(j.posicionFinal < 0) {
-                        jculo = j
-                    }
-                })
-                jculo.setRol(ROLES.CULO)
-                // ------ INICIAR NUEVA RONDA ------
-                let ranking = sala.getRankings()
-                io.to(salaId).emit("fin_ronda", {presi: ranking[0], vice_presi: ranking[1], vice_culo: ranking[2], culo: ranking[3]})
-                sala.startNewRound()
-
-                sala.jugadores.forEach(j => {
-                    io.to(j.id).emit("ronda_iniciada", {misCartas: j.mano})
-                })
-                return
-            } else {
-                if(jugador.posicionFinal == 1) {
-                    jugador.setRol(ROLES.PRESIDENTE)
-                } else if(jugador.posicionFinal == 2) {
-                    jugador.setRol(ROLES.VICE_PRESIDENTE)
-                } else {jugador.setRol(ROLES.NEUTRO)}
-            }
+        if (plin && nextJ) {
+            sala.nextJugador(); 
+            nextJ = sala.nextJugador(); 
+            io.to(salaId).emit("salto_turno", {});
         }
 
-        // SIGUIENTE JUGADOR A TIRAR
-        let nextJ = sala.nextJugador()
-        if(plin) {
-            nextJ = sala.nextJugador()
+        // Si da la vuelta completa y le toca al mismo que tiro la ultima carta -> Limpia mesa
+        if (mesa.ultimoJugador && nextJ && nextJ.id === mesa.ultimoJugador.id) {
+            mesa.reset();
+            sala.jugadoresResetPass();
+            io.to(salaId).emit("mesa_limpia", { motivo: "Todos pasaron" });
         }
 
-        if(nextJ.id === mesa.ultimoJugador.id) {
-            mesa.reset()
-            sala.jugadoresResetPass()
-            io.to(salaId).emit("mesa_limpia", {})
-        }
-        io.to(salaId).emit("turno_jugador", {turno: nextJ.id})
+        if(nextJ) io.to(salaId).emit("turno_jugador", { turno: nextJ.id });
     });
+
 
     socket.on("jugador_paso", (data, callback) => {
         const { salaId } = data
         const sala = rooms[salaId]
 
-        if(!sala.checkIfTurn(socket.id)) {
-            socket.emit("error", {mensaje: "No es tu turno"})
-            return;
+        if(!sala || !sala.checkIfTurn(socket.id)) {
+            return socket.emit("error", {mensaje: "No es tu turno"})
         }
 
-        let jugador
-        sala.jugadores.forEach(j => {
-            if(j.id === socket.id) jugador = j 
-        });
-        jugador.setHaPasado(true)
+        const jugador = sala.jugadores.find(j => j.id === socket.id);
+        jugador.haPasado = true;
         io.to(salaId).emit("jugador_paso_notif", {jugadorId: socket.id})
 
         let nextJ = sala.nextJugador()
         const mesa = sala.mesa
-        if(nextJ.id === mesa.ultimoJugador.id) {
+
+        if(mesa.ultimoJugador && nextJ && nextJ.id === mesa.ultimoJugador.id) {
             mesa.reset()
             sala.jugadoresResetPass()
-            io.to(salaId).emit("mesa_limpia", {})
+            io.to(salaId).emit("mesa_limpia", {motivo: "Todos pasaron"})
         }
         io.to(salaId).emit("turno_jugador", {turno: nextJ.id})
     });
+}
+
+// Fin de ronda e inicio de la siguiente
+function finalizarRonda(sala, io, salaId) {
+    // Ordenar roles -> Los que terminaron (posicion > 0) primero. El que queda (-1) el último.
+    const ranking = sala.jugadores.sort((a, b) => {
+        if (a.posicionFinal > 0 && b.posicionFinal === -1) return -1;
+        if (a.posicionFinal === -1 && b.posicionFinal > 0) return 1;
+        return a.posicionFinal - b.posicionFinal;
+    });
+
+    if (ranking.length >= 4) {
+        ranking.forEach(j => j.rol = ROLES.NEUTRO); // Primero todos a NEUTRO
+
+        ranking[0].rol = ROLES.PRESIDENTE;
+        ranking[1].rol = ROLES.VICE_PRESIDENTE;
+        ranking[ranking.length - 2].rol = ROLES.VICE_CULO;
+        ranking[ranking.length - 1].rol = ROLES.CULO;
+    }
+
+    const infoRanking = sala.getRankings();
+    io.to(salaId).emit("fin_ronda", { ranking: infoRanking });
+
+    setTimeout(() => {  // En 5 segundos empiza la siguiente ronda
+        sala.empezarRondaNueva();
+        sala.posiciones = 0;
+        
+        // Repartir cartas nuevas a todos
+        sala.jugadores.forEach(j => {
+             const socketJugador = io.sockets.sockets.get(j.id);
+             if(socketJugador) {
+                 socketJugador.emit("ronda_iniciada", { 
+                     misCartas: j.mano,
+                     jugadores: sala.jugadores.map(p => ({
+                        id: p.id, nombre: p.nombre, numCartas: p.mano.length, rol: p.rol
+                    }))
+                 });
+             }
+        });
+        
+
+        let indiceTurno = sala.jugadores.findIndex(j => j.rol === ROLES.CULO);
+        if (indiceTurno === -1) indiceTurno = 0;
+        
+        sala.turnoActual = indiceTurno;
+
+        const datosIntercambio = sala.gestionarIntercambio();
+
+        if (datosIntercambio.tipo === "intercambio_activo") {
+            io.to(salaId).emit("fase_intercambio", {});
+            datosIntercambio.instrucciones.forEach(instruccion => {
+                const s = io.sockets.sockets.get(instruccion.socketId);
+                if (s) s.emit(instruccion.evento, instruccion.data);
+            });
+        } else {
+            const idTurno = sala.jugadores[sala.turnoActual].id;
+            io.to(salaId).emit("turno_jugador", { turno: idTurno });
+        }
+    }, 5000);
 }

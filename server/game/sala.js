@@ -22,10 +22,10 @@ class Sala {
 
         // ESTADO INTERCAMBIO
         this.intercambiosPendientes = []
-
         this.baraja = null
 
         this.preferenciaBaraja48 = config?.baraja48 || false;
+        this.usarMazoGrande = false;
 
     }
 
@@ -37,54 +37,115 @@ class Sala {
 
     iniciar_partida(){
         if (this.jugadores.length < 4) return {error : "Faltan jugadores"};
-        if (this.estado !== "LOBBY") return { error: "Ya ha empezado" };
+        if (this.estado !== constantes.ESTADOS.LOBBY) return { error: "Ya ha empezado" };
 
-        this.estado = "JUGANDO";
+        this.estado = constantes.ESTADOS.REPARTIENDO;
+        this.ronda = 1;
 
         const numJugadores = this.jugadores.length;
-        let usarMazoGrande = false;
+        
+        if (numJugadores === 4) {this.usarMazoGrande = this.preferenciaBaraja48;}
+        else if (numJugadores === 6) {this.usarMazoGrande = true;}
+        else {this.usarMazoGrande = false;} // 5 jugadores
 
-        if (numJugadores === 4) {
-            usarMazoGrande = this.preferenciaBaraja48;
-        }else if (numJugadores === 6) {  // 5 ya es = false -> No se cambia
-            usarMazoGrande = true;
-        }
-
-        this.baraja = new Baraja(usarMazoGrande);
+        this.baraja = new Baraja(this.usarMazoGrande);
         this.baraja.barajar();
 
+        this.repartirCartas();
+
+        // Ronda 1, el 3 de Oros empieza
+        let indiceArranca = this.jugadores.findIndex(j => j.mano.some(c => c.palo === 'oros' && c.valor === 3));
+        if (indiceArranca === -1) indiceArranca = 0;
+        this.turnoActual = indiceArranca;
+
+        this.estado = constantes.ESTADOS.JUGANDO;
+
+        return {exito : true, turnoInicial: this.jugadores[this.turnoActual].id}
+    }
+
+    // auxiliar que se repetia varias veces
+    repartirCartas() {
         const totalCartas = this.baraja.cartas.length;
+        const numJugadores = this.jugadores.length;
         const cartasPorJugador = Math.floor(totalCartas / numJugadores);
 
         this.jugadores.forEach(jugador => {
-            jugador.mano = this.baraja.robar(cartasPorJugador)
-            // ordena cartas
-            jugador.mano.sort((a,b) => a.fuerza - b.fuerza)
+            jugador.mano = this.baraja.robar(cartasPorJugador);
+            jugador.mano.sort((a,b) => a.fuerza - b.fuerza);
         });
-        
-        return {exito : true}
     }
 
     nextJugador() {
-        turnoActual = (turnoActual + 1) % jugadores.length
-        let nextJ = jugadores[turnoActual]
-        while(nextJ.haPasado || nextJ.posicionFinal < 0) {
-            turnoActual = (turnoActual + 1) % jugadores.length
-            nextJ = jugadores[turnoActual]
-        }
-        return nextJ
+        let count = 0;
+        do {
+            this.turnoActual = (this.turnoActual + 1) % this.jugadores.length;
+            count++;
+            if (count > this.jugadores.length) return null; 
+        } while (this.jugadores[this.turnoActual].haPasado || this.jugadores[this.turnoActual].mano.length === 0);
+
+        return this.jugadores[this.turnoActual];
     }
 
-    checkIfTurn(id) { return id == this.jugadores[this.turnoActual].id }
+    checkIfTurn(id) { 
+        return id == this.jugadores[this.turnoActual].id 
+    }
 
     jugadoresResetPass() {
-        this.jugadores.forEach(j => {
-            j.setHaPasado(false) 
-        });
+        this.jugadores.forEach(j => j.haPasado = false);
+    }
+
+    gestionarIntercambio() {
+        // Solo intercambio a partir de la ronda 2
+        if (this.ronda < 2) return { tipo: "sin_intercambio" };
+        
+        const hayRoles = this.jugadores.some(j => j.rol === constantes.ROLES.PRESIDENTE);
+        if (!hayRoles) return { tipo: "sin_intercambio" };
+
+        this.estado = constantes.ESTADOS.INTERCAMBIO; 
+        this.intercambiosPendientes = [];
+
+        const instrucciones = [];
+        
+        const getPorRol = (r) => this.jugadores.find(j => j.rol === r);
+
+        const presidente = getPorRol(constantes.ROLES.PRESIDENTE);
+        const culo = getPorRol(constantes.ROLES.CULO);
+        const vicePresi = getPorRol(constantes.ROLES.VICE_PRESIDENTE);
+        const viceCulo = getPorRol(constantes.ROLES.VICE_CULO);
+
+        if (presidente && culo) {
+            instrucciones.push({
+                socketId: culo.id,
+                evento: "pedir_cartas",
+                data: { rol: constantes.ROLES.CULO, cantidad: 2, forzado: true, destino: constantes.ROLES.PRESIDENTE }
+            });
+            instrucciones.push({
+                socketId: presidente.id,
+                evento: "pedir_cartas",
+                data: { rol: constantes.ROLES.PRESIDENTE, cantidad: 2, forzado: false, destino: constantes.ROLES.CULO }
+            });
+            this.intercambiosPendientes.push(culo.id, presidente.id);
+        }
+
+        if (vicePresi && viceCulo) {
+            instrucciones.push({
+                socketId: viceCulo.id,
+                evento: "pedir_cartas",
+                data: { rol: constantes.ROLES.VICE_CULO, cantidad: 1, forzado: true, destino: constantes.ROLES.VICE_PRESIDENTE }
+            });
+            instrucciones.push({
+                socketId: vicePresi.id,
+                evento: "pedir_cartas",
+                data: { rol: constantes.ROLES.VICE_PRESIDENTE, cantidad: 1, forzado: false, destino: constantes.ROLES.VICE_CULO }
+            });
+            this.intercambiosPendientes.push(viceCulo.id, vicePresi.id);
+        }
+
+        return { tipo: "intercambio_activo", instrucciones };
     }
 
     realizarIntercambio(clientId, indicesCartas) {
-        if (this.estado !== 'INTERCAMBIO') return { error: 'No es fase de intercambio' };
+        if (this.estado !== constantes.ESTADOS.INTERCAMBIO) return { error: 'No es fase de intercambio' };
         if (!this.intercambiosPendientes.includes(clientId)) {
             return { error: 'No tienes intercambios pendientes' };
         }
@@ -94,29 +155,20 @@ class Sala {
 
         let rolDestino = null;
         switch (jugadorEnvia.rol) {
-            case 'culo':
-                rolDestino = 'presidente';
-                break;
-            case 'vice_culo':
-                rolDestino = 'vice_presidente';
-                break;
-            case 'vice_presidente':
-                rolDestino = 'vice_culo';
-                break;
-            case 'presidente':
-                rolDestino = 'culo';
-                break;
-            default:
-                return { error: 'Tu rol no intercambia cartas' };
+            case constantes.ROLES.CULO: rolDestino = constantes.ROLES.PRESIDENTE; break;
+            case constantes.ROLES.VICE_CULO: rolDestino = constantes.ROLES.VICE_PRESIDENTE; break;
+            case constantes.ROLES.VICE_PRESIDENTE: rolDestino = constantes.ROLES.VICE_CULO; break;
+            case constantes.ROLES.PRESIDENTE: rolDestino = constantes.ROLES.CULO; break;
+            default: return { error: 'Tu rol no intercambia cartas' };
         }
 
         const jugadorDestino = this.jugadores.find(j => j.rol === rolDestino);
         if (!jugadorDestino) return { error: 'No se encontró al destinatario' };
 
         
-        // Recuperar los objetos carta usando los índices que nos dio el cliente
+        // Recuperar objetos carta
         const cartasAEnviar = indicesCartas.map(indice => jugadorEnvia.mano[indice]).filter(c => c !== undefined);
-        if (cartasAEnviar.length === 0) return { error: 'Indices de cartas inválidos' };
+        if (cartasAEnviar.length === 0) return { error: 'Indices inválidos' };
 
         // Añadir las cartas al Destino
         jugadorDestino.mano.push(...cartasAEnviar);
@@ -137,45 +189,45 @@ class Sala {
         };
     }
     getRankings() {
-        let ranking = ["Presi", "Vice_Presi", "Vice_Culo", "Culo"]
-        let ptos = 2 + this.ronda * 2
-        if(ronda > 2) ptos = 6
+        let ranking = ["", "", "", ""] // Empieza vacio, se llena en el forEach
+        // Puntuación: presi (+2,+4,+6), vice(+1,+2,+3)
+        let ptos = 0;
+        if (this.ronda === 1) ptos = 2;
+        else if (this.ronda === 2) ptos = 4;
+        else ptos = 6;
         
         this.jugadores.forEach(j => {
-            if(j.rol == constantes.ROLES.PRESIDENTE) {
+            if(j.rol === constantes.ROLES.PRESIDENTE) {
                 ranking[0] = j.id;
-                j.addPtos(ptos)
-            } else if (j.rol == constantes.ROLES.VICE_PRESIDENTE) {
-                ranking[1] = j.id
-                j.addPtos(ptos/2)
-            } else if (j.rol == constantes.ROLES.VICE_CULO) {
-                ranking[2] = j.id
-                j.add(-ptos/2)
-            } else if (j.rol == constantes.ROLES.CULO) {
-                ranking[3] = j.id
-                j.add(-ptos)
+                j.addPtos(ptos);
+            } else if (j.rol === constantes.ROLES.VICE_PRESIDENTE) {
+                ranking[1] = j.id;
+                j.addPtos(Math.floor(ptos/2));
+            } else if (j.rol === constantes.ROLES.VICE_CULO) {
+                ranking[2] = j.id;
+                j.addPtos(-Math.floor(ptos/2));
+            } else if (j.rol === constantes.ROLES.CULO) {
+                ranking[3] = j.id;
+                j.addPtos(-ptos);
             }
         });
 
         return ranking
     }
 
-    startNewRound() {
-        this.baraja.barajar()
-        this.ronda++
+    empezarRondaNueva() {
+        this.ronda++;
+        this.mesa.reset(); // restaura a los valores por defecto
+
+        this.baraja = new Baraja(this.usarMazoGrande);
+        this.baraja.barajar();
         
-        const totalCartas = this.baraja.cartas.length;
-        const cartasPorJugador = Math.floor(totalCartas / numJugadores);
-
         this.jugadores.forEach(jugador => {
-            jugador.mano = this.baraja.robar(cartasPorJugador)
-            // ordena cartas
-            jugador.mano.sort((a,b) => a.fuerza - b.fuerza)
-
-            // -- Reset otros atributos --
-            jugador.setPosFinal(-1)
-            jugador.setHaPasado(false)
+            jugador.posicionFinal = -1;
+            jugador.haPasado = false;
         });
+
+        this.repartirCartas();
     }
 }
 
