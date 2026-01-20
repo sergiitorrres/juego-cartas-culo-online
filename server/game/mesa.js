@@ -2,29 +2,30 @@ class Mesa {
     constructor() {
         this.cartasEnMesa = []
         this.ultimoJugador = null
-        this.cantidad = null // Cuantas cartas juntas
+        this.cantidad = -1 // Cuantas cartas juntas
         this.fuerzaActual = -1
         this.jugadoresTerminado = 0
     }
 
-    jugadorTerminado() {
-        return ++this.jugadoresTerminado;
-    }
+    jugadorTerminado() { return ++this.jugadoresTerminado; }
 
     setFuerzaActual(f) {
+        const plin = this.fuerzaActual == f
         this.fuerzaActual = f
+        return plin
     }
 
-    setCartas(cartas) {
-        this.cartasEnMesa = cartas
-    }
+    setCartas(cartas) { this.cartasEnMesa = cartas }
+
+    setUltimoJugador(j) { this.ultimoJugador = j }
+
+    setCantidad(c) { this.cantidad = c }
 
     reset() {
         this.cartasEnMesa = []
         this.ultimoJugador = null
-        this.cantidad = null // Cuantas cartas juntas
+        this.cantidad = -1 // Cuantas cartas juntas
         this.fuerzaActual = -1
-        this.jugadoresTerminado = 0
     }
 }
 

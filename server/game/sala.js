@@ -35,7 +35,6 @@ class Sala {
         return nuevoJugador;
     }
 
-
     iniciar_partida(){
         if (this.jugadores.length < 4) return {error : "Faltan jugadores"};
         if (this.estado !== "LOBBY") return { error: "Ya ha empezado" };
@@ -66,8 +65,24 @@ class Sala {
         return {exito : true}
     }
 
-    updateTurnoActual() {
-        return ++this.turnoActual % this.jugadores.length;
+    nextJugador() {
+        turnoActual = (turnoActual + 1) % jugadores.length
+        let nextJ = jugadores[turnoActual]
+        while(nextJ.haPasado || nextJ.posicionFinal != null) {
+            turnoActual = (turnoActual + 1) % jugadores.length
+            nextJ = jugadores[turnoActual]
+        }
+        return nextJ
+    }
+
+    checkIfTurn(id) {
+        return id == this.jugadores[this.turnoActual].id
+    }
+
+    jugadoresResetPass() {
+        this.jugadores.forEach(j => {
+            j.setHaPasado(false) 
+        });
     }
 }
 

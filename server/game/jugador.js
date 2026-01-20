@@ -10,18 +10,18 @@ class Jugador {
         this.rol = constantes.ROLES.NEUTRO
         this.mano = []
         this.haPasado = false
-        this.posicionFinal = null
+        this.posicionFinal = -1
         this.puntuacion = null
         
     }
     
-    removeCarta(pos) {
-        this.cartas.splice(pos, 1)
-    }
+    removeCarta(pos) { this.cartas.splice(pos, 1) }
 
-    setPosFinal(pos) {
-        this.posicionFinal = pos
-    }
+    setPosFinal(pos) { this.posicionFinal = pos }
+
+    setRol(rol) { this.rol = rol }
+
+    setHaPasado(bool) { this.haPasado = bool }
 }
 
 module.exports = Jugador
