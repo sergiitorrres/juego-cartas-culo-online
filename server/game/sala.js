@@ -35,7 +35,6 @@ class Sala {
         return nuevoJugador;
     }
 
-
     iniciar_partida(){
         if (this.jugadores.length < 4) return {error : "Faltan jugadores"};
         if (this.estado !== "LOBBY") return { error: "Ya ha empezado" };
@@ -64,6 +63,119 @@ class Sala {
         });
         
         return {exito : true}
+    }
+
+    nextJugador() {
+        turnoActual = (turnoActual + 1) % jugadores.length
+        let nextJ = jugadores[turnoActual]
+        while(nextJ.haPasado || nextJ.posicionFinal < 0) {
+            turnoActual = (turnoActual + 1) % jugadores.length
+            nextJ = jugadores[turnoActual]
+        }
+        return nextJ
+    }
+
+    checkIfTurn(id) { return id == this.jugadores[this.turnoActual].id }
+
+    jugadoresResetPass() {
+        this.jugadores.forEach(j => {
+            j.setHaPasado(false) 
+        });
+    }
+
+    realizarIntercambio(clientId, indicesCartas) {
+        if (this.estado !== 'INTERCAMBIO') return { error: 'No es fase de intercambio' };
+        if (!this.intercambiosPendientes.includes(clientId)) {
+            return { error: 'No tienes intercambios pendientes' };
+        }
+
+        const jugadorEnvia = this.jugadores.find(j => j.id === clientId);
+        if (!jugadorEnvia) return { error: 'Jugador no encontrado' };
+
+        let rolDestino = null;
+        switch (jugadorEnvia.rol) {
+            case 'culo':
+                rolDestino = 'presidente';
+                break;
+            case 'vice_culo':
+                rolDestino = 'vice_presidente';
+                break;
+            case 'vice_presidente':
+                rolDestino = 'vice_culo';
+                break;
+            case 'presidente':
+                rolDestino = 'culo';
+                break;
+            default:
+                return { error: 'Tu rol no intercambia cartas' };
+        }
+
+        const jugadorDestino = this.jugadores.find(j => j.rol === rolDestino);
+        if (!jugadorDestino) return { error: 'No se encontró al destinatario' };
+
+        
+        // Recuperar los objetos carta usando los índices que nos dio el cliente
+        const cartasAEnviar = indicesCartas.map(indice => jugadorEnvia.mano[indice]).filter(c => c !== undefined);
+        if (cartasAEnviar.length === 0) return { error: 'Indices de cartas inválidos' };
+
+        // Añadir las cartas al Destino
+        jugadorDestino.mano.push(...cartasAEnviar);
+
+        // Borrar las cartas del Origen
+        jugadorEnvia.mano = jugadorEnvia.mano.filter(carta => !cartasAEnviar.includes(carta));
+
+        jugadorDestino.mano.sort((a, b) => a.fuerza - b.fuerza);
+        jugadorEnvia.mano.sort((a, b) => a.fuerza - b.fuerza);
+
+        this.intercambiosPendientes = this.intercambiosPendientes.filter(id => id !== clientId);
+
+        return {
+            exito: true,
+            destinatarioId: jugadorDestino.id,
+            nuevasCartas: cartasAEnviar,
+            faseTerminada: this.intercambiosPendientes.length === 0
+        };
+    }
+    getRankings() {
+        let ranking = ["Presi", "Vice_Presi", "Vice_Culo", "Culo"]
+        let ptos = 2 + this.ronda * 2
+        if(ronda > 2) ptos = 6
+        
+        this.jugadores.forEach(j => {
+            if(j.rol == constantes.ROLES.PRESIDENTE) {
+                ranking[0] = j.id;
+                j.addPtos(ptos)
+            } else if (j.rol == constantes.ROLES.VICE_PRESIDENTE) {
+                ranking[1] = j.id
+                j.addPtos(ptos/2)
+            } else if (j.rol == constantes.ROLES.VICE_CULO) {
+                ranking[2] = j.id
+                j.add(-ptos/2)
+            } else if (j.rol == constantes.ROLES.CULO) {
+                ranking[3] = j.id
+                j.add(-ptos)
+            }
+        });
+
+        return ranking
+    }
+
+    startNewRound() {
+        this.baraja.barajar()
+        this.ronda++
+        
+        const totalCartas = this.baraja.cartas.length;
+        const cartasPorJugador = Math.floor(totalCartas / numJugadores);
+
+        this.jugadores.forEach(jugador => {
+            jugador.mano = this.baraja.robar(cartasPorJugador)
+            // ordena cartas
+            jugador.mano.sort((a,b) => a.fuerza - b.fuerza)
+
+            // -- Reset otros atributos --
+            jugador.setPosFinal(-1)
+            jugador.setHaPasado(false)
+        });
     }
 }
 
