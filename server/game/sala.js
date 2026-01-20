@@ -84,6 +84,60 @@ class Sala {
             j.setHaPasado(false) 
         });
     }
+
+    realizarIntercambio(clientId, indicesCartas) {
+        if (this.estado !== 'INTERCAMBIO') return { error: 'No es fase de intercambio' };
+        if (!this.intercambiosPendientes.includes(clientId)) {
+            return { error: 'No tienes intercambios pendientes' };
+        }
+
+        const jugadorEnvia = this.jugadores.find(j => j.id === clientId);
+        if (!jugadorEnvia) return { error: 'Jugador no encontrado' };
+
+        let rolDestino = null;
+        switch (jugadorEnvia.rol) {
+            case 'culo':
+                rolDestino = 'presidente';
+                break;
+            case 'vice_culo':
+                rolDestino = 'vice_presidente';
+                break;
+            case 'vice_presidente':
+                rolDestino = 'vice_culo';
+                break;
+            case 'presidente':
+                rolDestino = 'culo';
+                break;
+            default:
+                return { error: 'Tu rol no intercambia cartas' };
+        }
+
+        const jugadorDestino = this.jugadores.find(j => j.rol === rolDestino);
+        if (!jugadorDestino) return { error: 'No se encontró al destinatario' };
+
+        
+        // Recuperar los objetos carta usando los índices que nos dio el cliente
+        const cartasAEnviar = indicesCartas.map(indice => jugadorEnvia.mano[indice]).filter(c => c !== undefined);
+        if (cartasAEnviar.length === 0) return { error: 'Indices de cartas inválidos' };
+
+        // Añadir las cartas al Destino
+        jugadorDestino.mano.push(...cartasAEnviar);
+
+        // Borrar las cartas del Origen
+        jugadorEnvia.mano = jugadorEnvia.mano.filter(carta => !cartasAEnviar.includes(carta));
+
+        jugadorDestino.mano.sort((a, b) => a.fuerza - b.fuerza);
+        jugadorEnvia.mano.sort((a, b) => a.fuerza - b.fuerza);
+
+        this.intercambiosPendientes = this.intercambiosPendientes.filter(id => id !== clientId);
+
+        return {
+            exito: true,
+            destinatarioId: jugadorDestino.id,
+            nuevasCartas: cartasAEnviar,
+            faseTerminada: this.intercambiosPendientes.length === 0
+        };
+    }
 }
 
 module.exports = Sala
