@@ -4,6 +4,17 @@ const { rooms } = require("../store");
 const Sala = require("../game/sala");
 const { ESTADOS } = require("../game/constantes");
 
+const obtenerSalasPublicas = () => {
+    return Object.values(rooms).map(sala => ({
+        id: sala.id,
+        cantJugadores: sala.jugadores.length,
+        maxJugadores: sala.maxJugadores,
+        modo: sala.preferenciaBaraja48 ? "48 Cartas" : "40 Cartas",
+        jugadores: sala.jugadores.map(j => j.nombre), // Solo nombres
+        estado: sala.estado
+    }));
+};
+
 function generarIdUnico(){
     const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let id;
@@ -22,7 +33,11 @@ function generarIdUnico(){
 }
 
 module.exports = (io, socket) => {
-
+    
+    socket.on("pedir_salas", () => {
+        socket.emit("salas_publicas", obtenerSalasPublicas());
+    });
+    
     socket.on("crear_sala", (data, callback) => {
         let { nombre, salaId, config } = data;
 
@@ -54,6 +69,7 @@ module.exports = (io, socket) => {
         // Avisa a todos incluyendome a mi
         io.to(salaId).emit("jugador_unido", {jugadores: partida.jugadores})
         console.log(`${nombre} se unió a ${salaId}`);
+         io.emit("salas_publicas", { salas: obtenerSalasPublicas() });
     });
     
     socket.on("unirse_sala", (data, callback) => {
@@ -89,6 +105,8 @@ module.exports = (io, socket) => {
         // Avisa a todos incluyendome a mi
         io.to(salaId).emit("jugador_unido", {jugadores: partida.jugadores})
         console.log(`${nombre} se unió a ${salaId}`);
+
+        io.emit("salas_publicas", { salas: obtenerSalasPublicas() });
     });
     
 
@@ -121,6 +139,7 @@ module.exports = (io, socket) => {
             delete rooms[salaId];
             
         }
+        io.emit("salas_publicas", { salas: obtenerSalasPublicas() });
     });
 
     
