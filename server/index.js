@@ -21,11 +21,12 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
     console.log(`Usuario conectado: ${socket.id}`);
     roomHandlers(io, socket);
+    gameHandlers(io, socket);
     });
 
 io.on("disconnect", (socket) => {
     console.log(`Usuario desconectado: ${socket.id}`);
-    });
+});
 
 server.listen(3000, () => {
     console.log("Servidor escuchando en el puerto 3000");

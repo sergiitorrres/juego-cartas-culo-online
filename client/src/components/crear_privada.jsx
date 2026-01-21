@@ -49,8 +49,8 @@ const CrearPrivada = ({ socket, playerName}) => {
       nombre: playerName,
       salaId: salaCrearId,
       config: {
-        maxJugadores: configSeleccionada.maxJugadores,
-        baraja48: configSeleccionada.baraja48
+        maxJugadores: config.maxJugadores,
+        baraja48: config.baraja48
       } 
     });
   }

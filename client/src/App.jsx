@@ -8,6 +8,7 @@ import CrearPrivada from './components/crear_privada';
 import Lobby1 from './components/lobby1';
 import Test from './components/test';
 import Mesa from './components/mesa1';
+import PartidaPublica from './components/partida_publica';
 
 const socket = io('http://localhost:3000')
 
@@ -25,6 +26,7 @@ function App() {
       <Route path = "/lobby" element = {<Lobby1 />}/>
       <Route path = "/mesa" element = {<Mesa />}/>
       <Route path = "/test" element = {<Test />}/>
+      <Route path = "/partida_publica" element = {<PartidaPublica socket={socket} playerName={playerName} />}/>
 
     </Routes>
   );

@@ -80,7 +80,7 @@ class Sala {
         do {
             this.turnoActual = (this.turnoActual + 1) % this.jugadores.length;
             count++;
-            if (count > this.jugadores.length) return null; 
+            if (count > this.jugadores.length) return null;
         } while (this.jugadores[this.turnoActual].haPasado || this.jugadores[this.turnoActual].mano.length === 0);
 
         return this.jugadores[this.turnoActual];
