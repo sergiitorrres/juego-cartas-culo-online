@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styles from './partida_publica.module.css';
+import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 
 const PartidaPublica = ({ socket, playerName}) => {
@@ -9,7 +10,7 @@ const PartidaPublica = ({ socket, playerName}) => {
       if (!playerName) navigate('/');
     }, [playerName, navigate]);
   
-  const [salas, setSalas] = useState([]);
+  const [salas] = useState([]);
   const [selectedConfig, setSelectedConfig] = useState(0);
   
   const configuraciones = [
@@ -20,13 +21,12 @@ const PartidaPublica = ({ socket, playerName}) => {
   ]
   
   useEffect(() => {
-    
 
     if (!socket) return;
 
-
     socket.on("sala_asignada", (data) => {
         console.log("Me han asignado la sala:", data.salaId);
+        navigate('/lobby1');
     });
 
     socket.on("jugador_unido", (data) => {
@@ -67,7 +67,7 @@ const PartidaPublica = ({ socket, playerName}) => {
 
     socket.emit('unirse_sala', { 
       nombre: playerName, 
-      salaId: salaIdSeleccionada.toUpperCase(),
+      salaId: salaIdSeleccionada,
       config: {}
     });
   }
@@ -149,6 +149,11 @@ const PartidaPublica = ({ socket, playerName}) => {
       </div>
     </div>
   );
+};
+
+PartidaPublica.propTypes = {
+  socket: PropTypes.object.isRequired,
+  playerName: PropTypes.string.isRequired,
 };
 
 export default PartidaPublica;
