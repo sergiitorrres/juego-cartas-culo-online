@@ -37,8 +37,8 @@ module.exports = (io, socket) => {
     socket.on("pedir_salas", () => {
         socket.emit("salas_publicas", obtenerSalasPublicas());
     });
-
-    socket.on("unirse_sala", (data, callback) => {
+    
+    socket.on("crear_sala", (data, callback) => {
         let { nombre, salaId, config } = data;
 
         if (!nombre) {
@@ -69,6 +69,7 @@ module.exports = (io, socket) => {
         // Avisa a todos incluyendome a mi
         io.to(salaId).emit("jugador_unido", {jugadores: partida.jugadores})
         console.log(`${nombre} se unió a ${salaId}`);
+         io.emit("salas_publicas", { salas: obtenerSalasPublicas() });
     });
     
     socket.on("unirse_sala", (data, callback) => {
