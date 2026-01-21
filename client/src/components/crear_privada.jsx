@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PropTypes from 'prop-types';
 import styles from './crear_privada.module.css';
 
 const CrearPrivada = ({ socket, playerName}) => {
@@ -123,6 +124,11 @@ const CrearPrivada = ({ socket, playerName}) => {
       </div>
     </div>
   );
+};
+
+CrearPrivada.propTypes = {
+  socket: PropTypes.object.isRequired,
+  playerName: PropTypes.string.isRequired,
 };
 
 export default CrearPrivada;
