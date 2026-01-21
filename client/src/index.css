@@ -1,0 +1,13 @@
+/* src/index.css */
+
+/* Esto quita los bordes blancos del navegador */
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+ /* background-color: #ffffff; /* Fondo negro por si carga mal la imagen */
+  overflow: hidden; /* Evita barras de scroll indeseadas */
+}
+
+/* Opcional: Si no pusiste los links en el HTML, impórtalos aquí */
+@import url('https://fonts.googleapis.com/css2?family=MedievalSharp&family=Pirata+One&display=swap');

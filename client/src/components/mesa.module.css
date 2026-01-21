@@ -1,0 +1,11 @@
+.tablero {
+  width: 100vw;
+  height: 100vh;
+  /* Aquí deberías poner tu 'mesa.webp' cuando la tengas en assets */
+  background-image: url('../assets/images/Board.webp');
+  background-color: #0f3d0f; /* Verde tapete temporal */
+  background-size: contain;
+  background-position: center;
+  position: relative;
+  overflow: hidden; /* Para que las cartas no se salgan */
+}
