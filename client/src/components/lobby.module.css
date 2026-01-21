@@ -1,0 +1,28 @@
+/* Estructura básica para centrar (esto te lo regalo yo para que no sufras) */
+.fondoPantalla {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  /* AQUÍ PEGARÁS EL ESTILO DEL FONDO DE PENPOT */
+}
+
+.tarjetaCentral {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: center;
+  /* AQUÍ PEGARÁS EL ESTILO DE LA TARJETA DE PENPOT */
+}
+
+.titulo {
+  /* AQUÍ PEGARÁS EL ESTILO DEL TEXTO */
+}
+
+.inputTexto {
+  /* AQUÍ PEGARÁS EL ESTILO DE LOS INPUTS */
+}
+
+.botonEntrar {
+  /* AQUÍ PEGARÁS EL ESTILO DEL BOTÓN */
+}
