@@ -22,8 +22,8 @@ function generarIdUnico(){
 }
 
 module.exports = (io, socket) => {
-    
-    socket.on("unirse_sala", (data, callback) => {
+
+    socket.on("crear_sala", (data, callback) => {
         let { nombre, salaId, config } = data;
 
         if (!nombre) {
@@ -31,10 +31,36 @@ module.exports = (io, socket) => {
         }
 
         if (!salaId || salaId === "AUTO") {
-            salaId = generarIdUnico();
-            
-            rooms[salaId] = new Sala(salaId, config);
-            console.log(`Sala creada automáticamente: ${salaId}`);
+            salaId = generarIdUnico(); 
+        } else{
+            if (rooms[salaId]){
+                return socket.emit("error", { mensaje: "Sala ya existente, prueba con otro código" });
+            }
+        }
+
+        rooms[salaId] = new Sala(salaId, config);
+        console.log(`Sala iniciada: ${salaId}`);
+        
+        const partida = rooms[salaId];
+
+        partida.addJugador(socket.id, nombre)
+
+        // Subscribe el socket a un canal
+        socket.join(salaId)
+        socket.data.salaId = salaId;
+
+        socket.emit("sala_asignada", { salaId: salaId });
+
+        // Avisa a todos incluyendome a mi
+        io.to(salaId).emit("jugador_unido", {jugadores: partida.jugadores})
+        console.log(`${nombre} se unió a ${salaId}`);
+    });
+    
+    socket.on("unirse_sala", (data, callback) => {
+        let { nombre, salaId } = data;
+
+        if (!nombre) {
+            return socket.emit("error", { mensaje: "Falta el nombre del jugador" });
         }
 
         const partida = rooms[salaId];

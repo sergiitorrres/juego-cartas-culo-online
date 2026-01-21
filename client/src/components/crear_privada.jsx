@@ -29,8 +29,10 @@ const CrearPrivada = ({ socket, playerName}) => {
       navigate('/lobby1');
     });
 
+
     socket.on("error", (data) => {
-      alert("Error:", data.mensaje)
+    console.log("Info del error:", data);
+    alert(`Error: ${data.mensaje}`);
     });
 
     return(() => {
@@ -46,7 +48,7 @@ const CrearPrivada = ({ socket, playerName}) => {
 
     console.log("Creando sala:", salaCrearId, config)
 
-    socket.emit('unirse_sala', { 
+    socket.emit('crear_sala', { 
       nombre: playerName,
       salaId: salaCrearId,
       config: {
@@ -63,8 +65,7 @@ const CrearPrivada = ({ socket, playerName}) => {
 
     socket.emit('unirse_sala', { 
       nombre: playerName, 
-      salaId: salaUnirseId,
-      config: {}
+      salaId: salaUnirseId
     });
 
   }

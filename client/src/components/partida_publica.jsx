@@ -34,8 +34,10 @@ const PartidaPublica = ({ socket, playerName}) => {
       navigate('/lobby1');
     });
 
+    
     socket.on("error", (data) => {
-      alert("Error:", data.mensaje)
+    console.log("Info del error:", data);
+    alert(`Error: ${data.mensaje}`);
     });
 
     return(() => {
@@ -50,7 +52,7 @@ const PartidaPublica = ({ socket, playerName}) => {
 
     console.log("Creando sala publica:", config)
 
-    socket.emit('unirse_sala', { 
+    socket.emit('crear_sala', { 
       nombre: playerName,
       salaId: null, // null para que genere un ID
       config: {
@@ -67,8 +69,7 @@ const PartidaPublica = ({ socket, playerName}) => {
 
     socket.emit('unirse_sala', { 
       nombre: playerName, 
-      salaId: salaIdSeleccionada,
-      config: {}
+      salaId: salaIdSeleccionada
     });
   }
 
