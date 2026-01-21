@@ -15,7 +15,8 @@ module.exports = (io, socket) => {
         if (resultado.error) {
             return socket.emit("error", { mensaje: resultado.error });
         }
-    console.log("Intentando iniciar partida2")
+        
+        console.log("Intentando iniciar partida2")
         sala.jugadores.forEach(j => {
             const s = io.sockets.sockets.get(j.id);
             if (s) {
