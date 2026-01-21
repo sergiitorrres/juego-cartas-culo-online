@@ -10,7 +10,7 @@ const PartidaPublica = ({ socket, playerName}) => {
       if (!playerName) navigate('/');
     }, [playerName, navigate]);
   
-  const [salas] = useState([]);
+  const [salas, setSalas] = useState([]);
   const [selectedConfig, setSelectedConfig] = useState(0);
   
   const configuraciones = [
@@ -23,6 +23,19 @@ const PartidaPublica = ({ socket, playerName}) => {
   useEffect(() => {
 
     if (!socket) return;
+
+    socket.emit('pedir_salas');
+
+    socket.on('salas_publicas', (data) => {
+    if (Array.isArray(data)) {
+        setSalas(data);
+      } else if (data && Array.isArray(data.salas)) {
+        setSalas(data.salas);
+      } else {
+        console.error("Formato de salas desconocido:", data);
+        setSalas([]); // Ponemos array vacío para evitar pantalla blanca
+      }
+    });
 
     socket.on("sala_asignada", (data) => {
         console.log("Me han asignado la sala:", data.salaId);
@@ -44,6 +57,7 @@ const PartidaPublica = ({ socket, playerName}) => {
       socket.off("jugador_unido");
       socket.off("error");
       socket.off("sala_asignada")
+      socket.off('salas_publicas');
     });
   }, [socket, navigate]);
     
@@ -102,7 +116,7 @@ const PartidaPublica = ({ socket, playerName}) => {
                   {/* Info Estado y Botón */}
                   <div className={styles.infoEstado}>
                     <div className={styles.badgeInfo}>
-                      <span>{sala.jugadores.length}/{sala.max}</span>
+                      <span>{sala.jugadores.length}/{sala.maxJugadores}</span>
                       <small>{sala.modo}</small>
                     </div>
                     <button 
