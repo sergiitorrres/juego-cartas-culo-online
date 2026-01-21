@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './inicio.module.css';
 
@@ -13,12 +13,20 @@ const Inicio = ({ playerName, setPlayerName }) => {
     navigate('/crear_privada');
   };
 
+  const irAPartidaPublica = () => {
+    if (!playerName.trim()) {
+      alert("Por favor, escribe tu nombre antes de entrar");
+      return;
+    }
+    navigate('/partida_publica');
+  };
+
   return (
     <div className={styles.pantalla}>
       {/* Contenedor del Pergamino */}
       <div className={styles.pergamino}>
         
-        <h1 className={styles.titulo}>La Taberna del Naipe</h1>
+        <h1 className={styles.titulo}>¡Que basto!</h1>
         
         <input 
           type="text" 
@@ -29,7 +37,7 @@ const Inicio = ({ playerName, setPlayerName }) => {
         />
         
         <div className={styles.botonesContainer}>
-          <button className={styles.botonMadera}>
+          <button className={styles.botonMadera} onClick={irAPartidaPublica}>
             Partida publica
           </button>
           

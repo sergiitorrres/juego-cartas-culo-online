@@ -4,21 +4,44 @@ const { rooms } = require("../store");
 const Sala = require("../game/sala");
 const { ESTADOS } = require("../game/constantes");
 
+function generarIdUnico(){
+    const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let id;
+    let existe = true;
+
+    while (existe) {
+        id = '';
+        for (let i = 0; i < 4; i++) {
+            id += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+        }
+        if (!rooms[id]) {
+            existe = false;
+        }
+    }
+    return id;
+}
+
 module.exports = (io, socket) => {
     
     socket.on("unirse_sala", (data, callback) => {
-        const { nombre, salaId, config } = data;
+        let { nombre, salaId, config } = data;
 
-        if (!nombre || !salaId) {
-            return socket.emit("error", { mensaje: "Datos incompletos" });
+        if (!nombre) {
+            return socket.emit("error", { mensaje: "Falta el nombre del jugador" });
         }
 
-        if (!rooms[salaId]) {
-            rooms[salaId] = new Sala(salaId, config)
-            console.log(`Sala ${salaId} creada.`);
+        if (!salaId || salaId === "AUTO") {
+            salaId = generarIdUnico();
+            
+            rooms[salaId] = new Sala(salaId, config);
+            console.log(`Sala creada automáticamente: ${salaId}`);
         }
-        
+
         const partida = rooms[salaId];
+
+        if (!partida) {
+            return socket.emit("error", { mensaje: "Esa sala no existe" });
+        }
 
         if (partida.estado !== "LOBBY") {
             return socket.emit("error", { mensaje: "La partida ya ha comenzado" });
@@ -35,6 +58,8 @@ module.exports = (io, socket) => {
         socket.join(salaId)
         socket.data.salaId = salaId;
 
+        socket.emit("sala_asignada", { salaId: salaId });
+
         // Avisa a todos incluyendome a mi
         io.to(salaId).emit("jugador_unido", {jugadores: partida.jugadores})
         console.log(`${nombre} se unió a ${salaId}`);
@@ -48,8 +73,6 @@ module.exports = (io, socket) => {
         if (!salaId || !rooms[salaId]) return;
 
         const partida = rooms[salaId];
-
-        partida.jugadores = partida.jugadores.filter(jugador => jugador.id !== socket.id);
 
         if (partida.estado === "LOBBY") {
             partida.jugadores = partida.jugadores.filter(jugador => jugador.id !== socket.id);
@@ -73,4 +96,6 @@ module.exports = (io, socket) => {
             
         }
     });
+
+    
 }
