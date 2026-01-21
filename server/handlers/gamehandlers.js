@@ -34,7 +34,8 @@ module.exports = (io, socket) => {
     });
 
     socket.on("lanzar_cartas", (data, callback) => {
-        const {indices, salaId} = data
+        const {indices} = data
+        const salaId = socket.data.salaId;
         const sala = rooms[salaId]
 
         if(!sala || !sala.checkIfTurn(socket.id)) {
@@ -135,7 +136,7 @@ module.exports = (io, socket) => {
 
 
     socket.on("jugador_paso", (data, callback) => {
-        const { salaId } = data
+        const salaId = socket.data.salaId;
         const sala = rooms[salaId]
 
         if(!sala || !sala.checkIfTurn(socket.id)) {
