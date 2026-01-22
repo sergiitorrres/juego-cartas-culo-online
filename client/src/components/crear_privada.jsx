@@ -70,6 +70,10 @@ const CrearPrivada = ({ socket, playerName}) => {
 
   }
 
+  const handleVolver = () => {
+    navigate('/');
+  }
+
   return (
     <div className={styles.pantalla}>
       <div className={styles.pergamino}>
@@ -123,6 +127,7 @@ const CrearPrivada = ({ socket, playerName}) => {
 
 
       </div>
+      <button className={styles.botonVolver} onClick={handleVolver}>Volver</button>
     </div>
   );
 };
