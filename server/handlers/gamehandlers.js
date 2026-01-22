@@ -157,6 +157,21 @@ module.exports = (io, socket) => {
         }
         io.to(salaId).emit("turno_jugador", {turno: nextJ.id})
     });
+
+    socket.on("dar_cartas", (data, callback) => {
+        const indices = data.indices
+        const salaId = socket.data.salaId
+        const sala = rooms[salaId]
+        
+        const info = sala.realizarIntercambio(socket.id, indices)
+        io.to(info.destinatarioId).emit("cartas_donadas", {from: socket.id, cartas: info.nuevasCartas})
+
+        if(info.faseTerminada) {
+            io.to(salaId).emit("fase_intercambio_finalizada", {});
+            const idTurno = sala.jugadores[sala.turnoActual].id;
+            io.to(salaId).emit("turno_jugador", { turno: idTurno });
+        }
+    });
 }
 
 // Fin de ronda e inicio de la siguiente
@@ -216,4 +231,6 @@ function finalizarRonda(sala, io, salaId) {
             io.to(salaId).emit("turno_jugador", { turno: idTurno });
         }
     }, 5000);
+
+
 }

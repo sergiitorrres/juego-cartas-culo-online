@@ -42,7 +42,7 @@ const Mesa = ({playerName, socket}) => {
     socket.on("jugada_valida", (data) => {
       setCartaMesa(data.cartas)
       if(data.jugadorId === socket.id) {
-        let cartas = misCartas
+        let cartas = [...misCartas]
         const cartasJugadas = indices.map(i => jugador.mano[i]).filter(c => c);
         cartas = cartas.filter(c => !cartasJugadas.includes(c));
         setMisCartas(cartas)
@@ -93,10 +93,34 @@ const Mesa = ({playerName, socket}) => {
       const forzado = data.forzado
 
       if(forzado) {
-        let cartas = misCartas
         cartas.splice(0, cant)
-        setMisCartas(ca)
+
+        let indices = [0]
+        if(cant == 2) {
+          indices.push(1)
+        }
+
+        socket.emit("dar_cartas", {
+          indices: indices
+        })
+      } else {
+        // MODIFICAR Y AÑADIR POP UP??
+        // Gestionar seleccion de cartas a donar !!!
       }
+    })
+
+    socket.on("cartas_donadas", (data) => {
+      const from = data.from // Para hacer animacion en el futuro
+      const nuevasCartas = data.cartas
+
+      let cartas = [...misCartas]
+      cartas.push(nuevasCartas)
+      cartas.sort((a, b) => b.fuerza - a.fuerza);
+      setMisCartas(cartas)
+    })
+
+    socket.on("fase_intercambio_finalizada", (data) => {
+      setEstado(ESTADOS.JUGANDO)
     })
 
     return () => { socket.off("ronda_iniciada"); }
@@ -111,7 +135,7 @@ const Mesa = ({playerName, socket}) => {
     })
   }
 
-  const handelerLanzarCarta = (indices) => {
+  const handlerLanzarCarta = (indices) => {
     socket.emit("lanzar_cartas", {
       indices: indices
     })
@@ -126,7 +150,18 @@ const Mesa = ({playerName, socket}) => {
     })
   }
 
-  
+  const handlerDarCartas = (indices) => {
+    indices.sort((a, b) => b - a);
+    let cartas = [...misCartas]
+    for(let i = 0; i < indices.length; i++) {
+      cartas.splice(indices[i], 1)
+    }
+    setMisCartas(cartas)
+
+    socket.emit("dar_cartas", {
+      indices: indices
+    })
+  } 
   
   return (
     // CONTENEDOR PADRE

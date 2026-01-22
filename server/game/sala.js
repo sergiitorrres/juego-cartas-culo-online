@@ -71,7 +71,7 @@ class Sala {
 
         this.jugadores.forEach(jugador => {
             jugador.mano = this.baraja.robar(cartasPorJugador);
-            jugador.mano.sort((a,b) => a.fuerza - b.fuerza);
+            jugador.mano.sort((a,b) => b.fuerza - a.fuerza);
         });
     }
 
@@ -176,8 +176,8 @@ class Sala {
         // Borrar las cartas del Origen
         jugadorEnvia.mano = jugadorEnvia.mano.filter(carta => !cartasAEnviar.includes(carta));
 
-        jugadorDestino.mano.sort((a, b) => a.fuerza - b.fuerza);
-        jugadorEnvia.mano.sort((a, b) => a.fuerza - b.fuerza);
+        jugadorDestino.mano.sort((a, b) => b.fuerza - a.fuerza);
+        jugadorEnvia.mano.sort((a, b) => b.fuerza - a.fuerza);
 
         this.intercambiosPendientes = this.intercambiosPendientes.filter(id => id !== clientId);
 
@@ -188,6 +188,7 @@ class Sala {
             faseTerminada: this.intercambiosPendientes.length === 0
         };
     }
+    
     getRankings() {
         let ranking = ["", "", "", ""] // Empieza vacio, se llena en el forEach
         // Puntuación: presi (+2,+4,+6), vice(+1,+2,+3)
