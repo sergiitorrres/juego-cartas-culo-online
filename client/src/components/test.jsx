@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import styles from './Lobby.module.css';
+import styles from './lobby.module.css';
 
 const Lobby = () => {
   const [playerName, setPlayerName] = useState('');

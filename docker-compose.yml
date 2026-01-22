@@ -1,14 +1,29 @@
 version: '3.8'
+
 services:
   app:
-    container_name: app
-    build: ./server
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: juego-cartas-app
     restart: always
     ports:
-      - 3000:3000
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
   tunnel:
-    container_name: tunnel
-    image: cloudflare/cloudflared
+    container_name: cloudflare-tunnel
+    image: cloudflare/cloudflared:latest
     command: tunnel --no-autoupdate run --token eyJhIjoiMTE0NmM0OTE1Mzg4NjZhMzVkNDM2ZTEzZjQ4YWM5MmQiLCJ0IjoiZTM4ZDNkNGItNTMzYy00ZmQwLWEyMTUtODc0NTVmNjgwM2VkIiwicyI6Ik1XUXpNekl5WXpndE0yUTFPUzAwWVRVd0xUaGhNV1l0WldGbVpEUmhZelkwTkdZeCJ9
     restart: always
     network_mode: service:app
+    depends_on:
+      - app

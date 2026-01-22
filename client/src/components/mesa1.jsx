@@ -2,7 +2,7 @@
 import styles from './mesa.module.css';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ESTADOS, ROLES } from '../../../server/game/constantes';
+import { ESTADOS, ROLES } from '../constantes';
 
 const Mesa = ({playerName, socket}) => {
   const navigate = useNavigate();
