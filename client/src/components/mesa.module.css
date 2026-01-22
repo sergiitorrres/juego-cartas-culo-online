@@ -1,11 +1,157 @@
-.tablero {
+/* --- CONTENEDOR PRINCIPAL --- */
+.game-table {
   width: 100vw;
   height: 100vh;
-  /* Aquí deberías poner tu 'mesa.webp' cuando la tengas en assets */
-  background-image: url('../assets/images/Board.webp');
-  background-color: #0f3d0f; /* Verde tapete temporal */
-  background-size: contain;
+  /* Sustituye 'fondo.jpg' por el nombre de tu imagen en la carpeta public */
+  background-image: url('../assets/images/Board.webp'); 
+  background-color: #2c3e50; /* Azul oscuro de respaldo como en tu foto */
+  background-size: cover;
   background-position: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+  overflow: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* --- ZONA 1: RIVALES (ARRIBA) --- */
+.opponents-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  height: 150px;
+}
+
+.jugador_rival {
+  background-color: #f1e7b0; /* Color pergamino de tu captura */
+  border: 3px solid #5d4037; /* Marrón oscuro */
+  border-radius: 12px;
+  padding: 10px;
+  width: 120px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+}
+
+.jugador_rival img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-bottom: 5px;
+}
+
+/* --- ZONA 2: CENTRO DE LA MESA --- */
+.table-center {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   position: relative;
-  overflow: hidden; /* Para que las cartas no se salgan */
+}
+
+.pila-central {
+  width: 300px;
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+/* Efecto de amontonar las cartas en el centro */
+.pila-central img {
+  position: absolute;
+  width: 100px;
+  border: 2px solid white;
+  border-radius: 8px;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+  transition: transform 0.3s;
+}
+
+/* Rotación ligera aleatoria para que parezca un montón real */
+.pila-central img:nth-child(odd) { transform: rotate(5deg); }
+.pila-central img:nth-child(even) { transform: rotate(-5deg); }
+
+/* --- BOTONES ESTILO "QUE BASTO" --- */
+.botonInicioPartida, .boton_pasar, button[onClick*="handlerLanzarCarta"] {
+  background-color: #5d4037;
+  color: #f1e7b0;
+  border: 2px solid #3e2723;
+  padding: 10px 25px;
+  border-radius: 8px;
+  font-weight: bold;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin: 10px;
+  transition: all 0.2s;
+}
+
+.botonInicioPartida:hover:not(:disabled), .boton_pasar:hover:not(:disabled) {
+  background-color: #795548;
+  transform: scale(1.05);
+}
+
+.botonInicioPartida:disabled, .boton_pasar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* --- ZONA 3: JUGADOR (ABAJO) --- */
+.zona_jugador {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.mi_mano {
+  display: flex;
+  justify-content: center;
+  gap: -20px; /* Para que las cartas se solapen un poco */
+}
+
+.carta {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.carta img {
+  width: 110px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+/* --- EFECTO LEVANTAR CARTA --- */
+.seleccionada {
+  transform: translateY(-35px); /* Se levanta al seleccionarla */
+}
+
+.carta:hover {
+  transform: translateY(-15px);
+}
+
+/* --- PERFIL --- */
+.mi_perfil {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background-color: #f1e7b0;
+  border: 3px solid #5d4037;
+  padding: 10px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mi_perfil img {
+  width: 40px;
+  height: 40px;
 }

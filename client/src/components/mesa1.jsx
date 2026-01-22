@@ -1,10 +1,8 @@
-import React from 'react';
+
 import styles from './mesa.module.css';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ESTADOS } from '../../../server/game/constantes';
-import { ROLES } from '../../../server/game/constantes';
-
+import { ESTADOS, ROLES } from '../../../server/game/constantes';
 
 const Mesa = ({playerName, socket}) => {
   const navigate = useNavigate();
@@ -17,7 +15,7 @@ const Mesa = ({playerName, socket}) => {
   const [seleccionadas, setSeleccionadas] = useState([]);
 
   useEffect(() => {
-    if (!playerName) navigate('/');
+    //if (!playerName) navigate('/');
     if (!socket) return;
 
     socket.on("ronda_iniciada",(data) =>{
@@ -37,15 +35,17 @@ const Mesa = ({playerName, socket}) => {
 
     socket.on("error",(data)=>{
       //MODIFICAR PARA QUE SE MANDE EL TEXTO DE TODOS LOS FALLOS
+      console.log(`Info error: ${data}`);
+      alert(`Error: ${data.mensaje}`);
     })
     
     socket.on("jugada_valida", (data) => {
-      setCartaMesa(data.cartas)
+      setCartaMesa(data.cartas);
       if(data.jugadorId === socket.id) {
         let cartas = [...misCartas]
-        const cartasJugadas = indices.map(i => jugador.mano[i]).filter(c => c);
-        cartas = cartas.filter(c => !cartasJugadas.includes(c));
-        setMisCartas(cartas)
+        cartas = cartas.filter(c => !data.cartas.find(dc => dc.id === c.id));
+        setMisCartas(cartas);
+        setSeleccionadas([]);
       }
     })
   
@@ -58,9 +58,9 @@ const Mesa = ({playerName, socket}) => {
     });
 
     socket.on("fin_ronda", (data) => {
-      const ranking = data.ranking
-      const roles = [ROLES.PRESIDENTE, ROLES.VICE_PRESIDENTE, ROLES.VICE_CULO, ROLES.CULO]
-      let flag = false
+      const ranking = data.ranking;
+      const roles = [ROLES.PRESIDENTE, ROLES.VICE_PRESIDENTE, ROLES.VICE_CULO, ROLES.CULO];
+      let flag = false;
 
       for(let i = 0; i < ranking.length; i++) {
         // El servidor envía: { jugadorId, posicion }
@@ -72,37 +72,37 @@ const Mesa = ({playerName, socket}) => {
         );
         
         if(ranking[i].id === socket.id) {
-          setMiRol(roles[i])
-          flag = true
+          setMiRol(roles[i]);
+          flag = true;
         }
       }
 
       if(!flag) {
-        setMiRol(ROLES.NEUTRO)
+        setMiRol(ROLES.NEUTRO);
       }
     }) 
 
     // ======= INTERCAMBIOS =======
 
     socket.on("fase_intercambio", (data) => {
-      setEstado(ESTADOS.INTERCAMBIO)
+      setEstado(ESTADOS.INTERCAMBIO);
     }) 
 
     socket.on("pedir_cartas", (data) => {
-      const cant = data.cantidad
-      const forzado = data.forzado
+      const cant = data.cantidad;
+      const forzado = data.forzado;
+      let cartas = misCartas;
 
       if(forzado) {
-        cartas.splice(0, cant)
+        cartas.splice(0, cant);
 
         let indices = [0]
         if(cant == 2) {
-          indices.push(1)
+          indices.push(1);
         }
 
-        socket.emit("dar_cartas", {
-          indices: indices
-        })
+        socket.emit("dar_cartas", {indices: indices})
+
       } else {
         // MODIFICAR Y AÑADIR POP UP??
         // Gestionar seleccion de cartas a donar !!!
@@ -110,39 +110,40 @@ const Mesa = ({playerName, socket}) => {
     })
 
     socket.on("cartas_donadas", (data) => {
-      const from = data.from // Para hacer animacion en el futuro
-      const nuevasCartas = data.cartas
+      const from = data.from; // Para hacer animacion en el futuro
+      const nuevasCartas = data.cartas;
 
-      let cartas = [...misCartas]
-      cartas.push(nuevasCartas)
+      let cartas = [...misCartas];
+      cartas.push(nuevasCartas);
       cartas.sort((a, b) => b.fuerza - a.fuerza);
-      setMisCartas(cartas)
+      setMisCartas(cartas);
     })
 
     socket.on("fase_intercambio_finalizada", (data) => {
-      setEstado(ESTADOS.JUGANDO)
+      setEstado(ESTADOS.JUGANDO);
     })
-
-    return () => { socket.off("ronda_iniciada"); }
+    
+    // ***********************************
+    //  ======= CIERRE DE SOCKETS =======
+    // ***********************************
+    return () => { socket.off("ronda_iniciada") ;socket.off( "jugador_paso_notif"); socket.off("turno_jugador"); socket.off("error"); socket.off("jugada_valida");
+      socket.off("jugador_termino"); socket.off("fin_ronda"); socket.off("fase_intercambio"); socket.off("pedir_cartas"); socket.off("dar_cartas"); socket.off("cartas_donadas"); socket.off("fase_intercambio_finalizada")
+    ;}
   }, [playerName, navigate]);
 
   const handlerIniciarPartida = () => {
-    socket.emit("iniciar_partida",{
-    })
+    socket.emit("iniciar_partida",{});
   }
   const handlerPasarTurno = () => {
-    socket.emit("jugador_paso",{
-    })
+    socket.emit("jugador_paso",{});
   }
 
   const handlerLanzarCarta = (indices) => {
-    socket.emit("lanzar_cartas", {
-      indices: indices
-    })
+    socket.emit("lanzar_cartas", {indices: indices});
   }
 
   const toggleSelection = (index) =>{
-    setSeleccionadas ((prev) =>{
+    setSeleccionadas((prev) =>{
       if(prev.includes(index)){
         return prev.filter((i) => i !== index);
       }
@@ -152,80 +153,112 @@ const Mesa = ({playerName, socket}) => {
 
   const handlerDarCartas = (indices) => {
     indices.sort((a, b) => b - a);
-    let cartas = [...misCartas]
+    let cartas = [...misCartas];
     for(let i = 0; i < indices.length; i++) {
-      cartas.splice(indices[i], 1)
+      cartas.splice(indices[i], 1);
     }
-    setMisCartas(cartas)
 
-    socket.emit("dar_cartas", {
-      indices: indices
-    })
+    setMisCartas(cartas);
+
+    socket.emit("dar_cartas", {indices: indices});
   } 
   
   return (
     // CONTENEDOR PADRE
-    <div 
-      className="game-table"
+    <div className={styles['game-table']}
       data-fase="Lobby"
       data-jugadores="0" // Acuérdate de poner "data-"
     >
       
       {/* --- ZONA 1: OPONENTES (ARRIBA) --- */}
-      <div className="opponents-row">
-        
-        {/* Un Jugador Rival */}
-        <div className="jugador_rival"> 
-          <img alt="avatar" src="foto_avatar" />
-          <span>{playerName}</span>
-          <img alt="rol" src="foto_rol" />
-          <img alt="estado" src="foto_check" />
-          
-          <div className="contador">
-            <img alt="cartas" src="icono_cartas.png" />
-            <span>3</span>
-          </div>
+      <div className={styles['opponents-row']}>
+       {rivales.map((rival,posicion_pantalla) => (
+        <div key= {rival.id} className={styles.jugador_rival}>
+          <span className={styles.nombre_rival}> {rival.nombre} </span>
+          <span> {rival.numCartas} </span>
+          <img alt={rival.rol} src= 'PONER AQUI LA URL DE LA FOTO DEL ROL'/>
+          <img alt="avatar" className={styles.avatar} src="foto_avatar" />
+
+          {rival.posicionFinal > 0 ?
+          (<span className={styles.victoria}> Termino en posicion {rival.posicionFinal}</span>):
+          (<div className={styles.contadorDeCartas}>
+            <img alt= '' src='INSERTAR AQUI URL QUE PONGAMOS PARA ICNONO DEL'/>
+            <span> {rival.numCartas} </span>
+          </div>)
+          }
+          {rival.id === turno &&
+            <span className={styles.pensando}> ◀◀ Pensando </span>
+          }
         </div>
 
-        {/* Si hubiera más rivales, irían aquí... */}
+       )
+      
+        
+      )}
 
       </div> 
 
 
       {/* --- ZONA 2: CENTRO DE LA MESA --- */}
-      <div className="table-center">
-        <div className="pila-central"></div> 
+      <div className={styles['table-center']}>
+        <div className={styles['pila-central']}>
+          {cartasMesa.map((carta,index) =>(
+            <img key = {carta.id} alt = {carta.id} src = {`/cartas/${carta.img}`}/>
+          ))}
+          </div>
+        <div className={styles.controles_centro}>
         <button
-          className="botonInicioPartida"
+          className={styles.botonInicioPartida}
           type="button"
           onClick={handlerIniciarPartida}
-          disabled={!LOBBY} 
-        ></button>
+          disabled={estado !== ESTADOS.LOBBY } 
+        > INICIAR PARTIDA </button>
         
         <button
-          className="boton_pasar"
+          className = {styles.boton_pasar}
           type="button"
-          onClick={jugador_paso}
-          // disabled={true} preguntar como funciona lo de pasar y los turnos
+          onClick={handlerPasarTurno}
+          disabled={turno !== socket?.id}
         >
           Pasar
         </button>
         
-        <span className="info-turno">Turno de: Pepe</span>
+        </div>  
       </div>
 
 
       {/* --- ZONA 3: TÚ (ABAJO) - LO QUE TE FALTABA --- */}
-      <div className="zona del jugador">
-         <div className="mi_mano">
+      <div className={styles.zona_jugador}>
+         <div className={styles.mi_mano}>
+          {misCartas.map((carta,posicion) =>
+          <button
+          key={carta.id}
+          onClick= {() => toggleSelection(posicion)}
+          className={`${styles.carta} ${seleccionadas.includes(posicion) ? styles.seleccionada : ''}`}
           
-            <button className="carta">3 🔶</button> 
-         </div>
+          >
+            
+          <img
+          alt = {carta.id}
+          src={`/cartas/${carta.img}`}
+          ></img>
 
-         <div className="mi_perfil">
+          </button>
+
+          
+          )}
+          
+         </div>
+          <button onClick = {() => handlerLanzarCarta(seleccionadas)}
+            disabled ={turno !== socket?.id || seleccionadas.length === 0} 
+            className={styles.boton_lanzar}
+          >    
+          Lanzar
+          </button>
+         <div className={styles.mi_perfil}>
             <img alt="mi avatar" src="mi_foto" />
             <img alt="icono rol" src="icono rol" />
-            <span>Yo</span>
+            <span>{playerName} ({miRol || 'Sin Rol'})</span>
          </div>
       </div>
 
