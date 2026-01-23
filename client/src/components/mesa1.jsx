@@ -41,8 +41,10 @@ const Mesa = ({playerName, socket}) => {
     socket.on("jugada_valida", (data) => {
       setCartaMesa(data.cartas);
       if(data.jugadorId === socket.id) {
-        let cartas = [...misCartas]
-        cartas = cartas.filter(c => !data.cartas.find(dc => dc.id === c.id));
+        const idsJugadas = data.cartas.map(c => c.id);
+        setMisCartas(prevCartas =>
+          prevCartas.filter(c => !idsJugadas.includes(c.id))
+        );
         setMisCartas(cartas);
         setSeleccionadas([]);
       }
@@ -95,7 +97,7 @@ const Mesa = ({playerName, socket}) => {
     socket.on("pedir_cartas", (data) => {
       const cant = data.cantidad;
       const forzado = data.forzado;
-      let cartas = misCartas;
+      let cartas = [...misCartas];
 
       if(forzado) {
         cartas.splice(0, cant);
@@ -208,23 +210,26 @@ const Mesa = ({playerName, socket}) => {
       <div className={styles['table-center']}>
         <div className={styles['pila-central']}>
           {cartasMesa.map((carta,index) =>(
-            <img key = {carta.id} alt = {carta.id} src = {`/cartas/${carta.img}`}/>
+            <img key={index} alt = {carta.id} src={`/assets/images/cartas/${carta.id}.png`}/>
           ))}
           </div>
         <div className={styles.controles_centro}>
-        <button
-          className={styles.botonInicioPartida}
-          type="button"
-          onClick={handlerIniciarPartida}
-          disabled={estado !== ESTADOS.LOBBY } 
-        > INICIAR PARTIDA </button>
+          {estado === ESTADOS.LOBBY && (
+            <button
+            className={styles.botonInicioPartida}
+            type="button"
+            onClick={handlerIniciarPartida}
+          > 
+        INICIAR PARTIDA 
+      </button>
+    )}
         
-        <button
-          className = {styles.boton_pasar}
-          type="button"
-          onClick={handlerPasarTurno}
-          disabled={turno !== socket?.id || cartasMesa.length === 0}
-        >
+          <button
+            className = {styles.boton_pasar}
+            type="button"
+            onClick={handlerPasarTurno}
+            disabled={turno !== socket?.id || cartasMesa.length === 0}
+          >
           Pasar
         </button>
         
@@ -256,13 +261,13 @@ const Mesa = ({playerName, socket}) => {
          </div>
           <button onClick = {() => handlerLanzarCarta(seleccionadas)}
             disabled ={turno !== socket?.id || seleccionadas.length === 0} 
-            className={styles.boton_lanzar}
+            className={`${styles.boton_lanzar} ${seleccionadas.length > 0 ? styles.brillante : ''}`}
           >    
           Lanzar
           </button>
          <div className={styles.mi_perfil}>
-            <img alt="mi avatar" src="mi_foto" />
-            <img alt="icono rol" src="icono rol" />
+            <img alt="mi avatar" src="/assets/images/avatar-de-usuario.png" />
+            <img alt="icono rol" src="/assets/images/culo_rol.png" />
             <span>{playerName} ({miRol || 'Sin Rol'})</span>
          </div>
       </div>

@@ -78,12 +78,10 @@ const CrearPrivada = ({ socket, playerName}) => {
       salaId: salaUnirseId
     });
 
-    const handleVolver = () => {
-    navigate('/');
   }
-
+  const handleVolver = () => {
+  navigate('/');
   }
-
   return (
     <div className={styles.pantalla}>
       <div className={styles.pergamino}>

@@ -1,10 +1,9 @@
-/* --- CONTENEDOR PRINCIPAL --- */
+/* --- 1. CONTENEDOR PRINCIPAL --- */
 .game-table {
   width: 100vw;
   height: 100vh;
-  /* Sustituye 'fondo.jpg' por el nombre de tu imagen en la carpeta public */
-  background-image: url('../assets/images/Board.webp'); 
-  background-color: #2c3e50; /* Azul oscuro de respaldo como en tu foto */
+  background-image: url('/assets/images/Board.webp'); /* Ruta absoluta para Docker */
+  background-color: #2c3e50;
   background-size: cover;
   background-position: center;
   display: flex;
@@ -12,38 +11,57 @@
   justify-content: space-between;
   padding: 20px;
   overflow: hidden;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  position: relative;
+  box-sizing: border-box;
 }
 
-/* --- ZONA 1: RIVALES (ARRIBA) --- */
+/* --- 2. ZONA OPONENTES (ARRIBA) --- */
 .opponents-row {
   display: flex;
   justify-content: center;
-  gap: 20px;
-  height: 150px;
+  gap: 15px;
+  height: 160px;
 }
 
 .jugador_rival {
-  background-color: #f1e7b0; /* Color pergamino de tu captura */
-  border: 3px solid #5d4037; /* Marrón oscuro */
+  background-color: #f1e7b0;
+  border: 3px solid #5d4037;
   border-radius: 12px;
-  padding: 10px;
-  width: 120px;
+  padding: 8px;
+  width: 110px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  position: relative;
 }
 
-.jugador_rival img {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
+.nombre_rival {
+  font-weight: bold;
+  color: #3e2723;
+  font-size: 0.9rem;
   margin-bottom: 5px;
 }
 
-/* --- ZONA 2: CENTRO DE LA MESA --- */
+.avatar {
+  width: 45px !important;
+  height: 45px !important;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #5d4037;
+}
+
+.pensando {
+  position: absolute;
+  bottom: -25px;
+  color: #f1e7b0;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px black;
+  font-size: 0.8rem;
+}
+
+/* --- 3. ZONA CENTRAL (MESA Y BOTONES) --- */
 .table-center {
   flex-grow: 1;
   display: flex;
@@ -54,64 +72,53 @@
 }
 
 .pila-central {
-  width: 300px;
-  height: 200px;
+  position: relative;
+  width: 250px;
+  height: 180px;
   display: flex;
   justify-content: center;
   align-items: center;
-  position: relative;
 }
 
-/* Efecto de amontonar las cartas en el centro */
 .pila-central img {
   position: absolute;
   width: 100px;
   border: 2px solid white;
   border-radius: 8px;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-  transition: transform 0.3s;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+  transition: transform 0.3s ease;
 }
 
-/* Rotación ligera aleatoria para que parezca un montón real */
-.pila-central img:nth-child(odd) { transform: rotate(5deg); }
-.pila-central img:nth-child(even) { transform: rotate(-5deg); }
+/* Efecto abanico para ver si es pareja o trío */
+.pila-central img:nth-child(1) { transform: translateX(-30px) rotate(-5deg); }
+.pila-central img:nth-child(2) { transform: translateX(0px) rotate(2deg); }
+.pila-central img:nth-child(3) { transform: translateX(30px) rotate(-3deg); }
+.pila-central img:nth-child(4) { transform: translateX(50px) rotate(6deg); }
 
-/* --- BOTONES ESTILO "QUE BASTO" --- */
-.botonInicioPartida, .boton_pasar, button[onClick*="handlerLanzarCarta"] {
-  background-color: #5d4037;
-  color: #f1e7b0;
-  border: 2px solid #3e2723;
-  padding: 10px 25px;
-  border-radius: 8px;
-  font-weight: bold;
-  text-transform: uppercase;
-  cursor: pointer;
-  margin: 10px;
-  transition: all 0.2s;
+.controles_centro {
+  margin-top: 25px;
+  display: flex;
+  justify-content: center; /* ESTO centra los botones automáticamente */
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  min-height: 50px; /* Evita que la mesa "salte" cuando desaparece el botón */
 }
 
-.botonInicioPartida:hover:not(:disabled), .boton_pasar:hover:not(:disabled) {
-  background-color: #795548;
-  transform: scale(1.05);
-}
-
-.botonInicioPartida:disabled, .boton_pasar:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* --- ZONA 3: JUGADOR (ABAJO) --- */
+/* --- 4. ZONA JUGADOR (ABAJO) --- */
 .zona_jugador {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
+  padding-bottom: 10px;
 }
 
 .mi_mano {
   display: flex;
   justify-content: center;
-  gap: -20px; /* Para que las cartas se solapen un poco */
+  gap: -35px; /* Solapamiento de cartas */
+  margin-bottom: 5px;
 }
 
 .carta {
@@ -119,39 +126,77 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 0.2s;
 }
 
 .carta img {
-  width: 110px;
+  width: 105px;
   border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
 }
 
-/* --- EFECTO LEVANTAR CARTA --- */
 .seleccionada {
-  transform: translateY(-35px); /* Se levanta al seleccionarla */
+  transform: translateY(-30px);
 }
 
-.carta:hover {
-  transform: translateY(-15px);
+/* --- 5. BOTONES Y ESTILOS --- */
+.botonInicioPartida, .boton_pasar {
+  background-color: #5d4037;
+  color: #f1e7b0;
+  border: 2px solid #3e2723;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  text-transform: uppercase;
 }
 
-/* --- PERFIL --- */
+.boton_lanzar {
+  background-color: #27632a;
+  color: #f1e7b0;
+  border: 2px solid #1b471d;
+  padding: 10px 35px;
+  border-radius: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #1b471d;
+}
+
+.boton_lanzar:disabled {
+  background-color: #7f8c8d;
+  border-color: #2c3e50;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+.brillante {
+  animation: pulso 1.5s infinite;
+}
+
+@keyframes pulso {
+  0% { box-shadow: 0 0 0 0 rgba(39, 99, 42, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(39, 99, 42, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(39, 99, 42, 0); }
+}
+
+/* --- 6. PERFIL (CORREGIDO TAMAÑO) --- */
 .mi_perfil {
   position: absolute;
-  bottom: 20px;
-  right: 20px;
+  bottom: 15px;
+  right: 15px;
   background-color: #f1e7b0;
-  border: 3px solid #5d4037;
-  padding: 10px;
-  border-radius: 12px;
+  border: 2px solid #5d4037;
+  padding: 8px 12px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  font-size: 0.85rem;
 }
 
 .mi_perfil img {
-  width: 40px;
-  height: 40px;
+  width: 35px !important;  /* Limita el tamaño del avatar y rol */
+  height: 35px !important;
+  object-fit: contain;
 }
