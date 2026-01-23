@@ -200,3 +200,85 @@
   height: 35px !important;
   object-fit: contain;
 }
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.85); /* Fondo oscuro */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(3px);
+}
+
+.modalCaja {
+  background-color: #f1e7b0; /* Color pergamino */
+  border: 4px solid #5d4037;
+  border-radius: 15px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+  max-width: 400px;
+  width: 90%;
+  animation: aparecer 0.3s ease-out;
+}
+
+@keyframes aparecer {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modalCaja h3 {
+  color: #c0392b; /* Rojo oscuro */
+  margin-top: 0;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+}
+
+.modalCaja p {
+  color: #3e2723;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin: 20px 0;
+}
+
+.modalBotones {
+  display: flex;
+  justify-content: space-around;
+  gap: 15px;
+  margin-top: 25px;
+}
+
+.btnSi {
+  background-color: #c0392b;
+  color: white;
+  border: 2px solid #922b21;
+  padding: 10px 25px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.btnSi:hover {
+  background-color: #e74c3c;
+}
+
+.btnNo {
+  background-color: #27ae60;
+  color: white;
+  border: 2px solid #1e8449;
+  padding: 10px 25px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.btnNo:hover {
+  background-color: #2ecc71;
+}

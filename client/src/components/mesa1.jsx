@@ -13,6 +13,23 @@ const Mesa = ({playerName, socket}) => {
   const [cartasMesa, setCartaMesa] = useState([]);
   const [miRol, setMiRol] = useState();
   const [seleccionadas, setSeleccionadas] = useState([]);
+  const [mostrarModal, setMostrarModal] = useState(false);
+
+useEffect(() => {
+    
+    window.history.pushState(null, null, window.location.pathname);
+
+    const handlePopState = (event) => {
+      window.history.pushState(null, null, window.location.pathname);
+      setMostrarModal(true);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   useEffect(() => {
     //if (!playerName) navigate('/');
@@ -136,7 +153,18 @@ const Mesa = ({playerName, socket}) => {
       socket.off("jugador_termino"); socket.off("fin_ronda"); socket.off("fase_intercambio"); socket.off("pedir_cartas"); socket.off("dar_cartas"); 
       socket.off("cartas_donadas"); socket.off("fase_intercambio_finalizada"); socket.off("mesa_limpia")
     }
-  }, [playerName, navigate]);
+  }, [playerName, navigate, socket]);
+
+  const handlerconfirmarSalida = () => {
+    // El usuario dijo SI
+    socket.emit("salir_sala"); // Avisamos al server (rompe la partida)
+    navigate('/inicio1'); // Nos vamos a la pantalla de inicio
+  };
+
+  const handlercancelarSalida = () => {
+    // El usuario dijo NO
+    setMostrarModal(false); // Ocultamos modal y seguimos jugando
+  };
 
   const handlerIniciarPartida = () => {
     socket.emit("iniciar_partida",{});
@@ -177,6 +205,20 @@ const Mesa = ({playerName, socket}) => {
       data-jugadores="0" // Acuérdate de poner "data-"
     >
       
+      {mostrarModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalCaja}>
+            <h3>⚠ ATENCIÓN</h3>
+            <p>¿Estás seguro de que quieres abandonar la partida?</p>
+            <p style={{fontSize: '0.9rem', color: '#666'}}>Si sales, la partida finalizará para todos.</p>
+            <div className={styles.modalBotones}>
+              <button onClick={handlerconfirmarSalida} className={styles.btnSi}>SÍ, SALIR</button>
+              <button onClick={handlercancelarSalida} className={styles.btnNo}>NO</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* --- ZONA 1: OPONENTES (ARRIBA) --- */}
       <div className={styles['opponents-row']}>
        {rivales.map((rival,posicion_pantalla) => (
