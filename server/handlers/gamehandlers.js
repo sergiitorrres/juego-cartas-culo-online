@@ -121,14 +121,13 @@ module.exports = (io, socket) => {
 
         if (plin && nextJ) {
             nextJ = sala.nextJugador(); 
-            io.to(salaId).emit("salto_turno", {});
         }
 
         // Si da la vuelta completa y le toca al mismo que tiro la ultima carta -> Limpia mesa
         if (mesa.ultimoJugador && nextJ && nextJ.id === mesa.ultimoJugador.id) {
             mesa.reset();
             sala.jugadoresResetPass();
-            io.to(salaId).emit("mesa_limpia", { motivo: "Todos pasaron" });
+            io.to(salaId).emit("mesa_limpia", { motivo: "Nadie ha tirado cartas" });
         }
 
         if(nextJ) io.to(salaId).emit("turno_jugador", { turno: nextJ.id });
@@ -153,7 +152,7 @@ module.exports = (io, socket) => {
         if(mesa.ultimoJugador && nextJ && nextJ.id === mesa.ultimoJugador.id) {
             mesa.reset()
             sala.jugadoresResetPass()
-            io.to(salaId).emit("mesa_limpia", {motivo: "Todos pasaron"})
+            io.to(salaId).emit("mesa_limpia", {motivo: "Nadie ha tirado cartas"})
         }
         io.to(salaId).emit("turno_jugador", {turno: nextJ.id})
     });

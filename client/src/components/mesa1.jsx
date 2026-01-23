@@ -26,7 +26,6 @@ const Mesa = ({playerName, socket}) => {
 
     socket.on("jugador_paso_notif",(data) =>{
       //MODIFICAR PARA QUE SE VEA CUANDO PASA
-      
     })
 
     socket.on("turno_jugador",(data) =>{
@@ -82,6 +81,11 @@ const Mesa = ({playerName, socket}) => {
       }
     }) 
 
+    socket.on("mesa_limpia", (data) => {
+      const motivo = data.motivo; // Probablemente no necesario
+      setCartaMesa([]);
+    })
+
     // ======= INTERCAMBIOS =======
 
     socket.on("fase_intercambio", (data) => {
@@ -127,8 +131,9 @@ const Mesa = ({playerName, socket}) => {
     //  ======= CIERRE DE SOCKETS =======
     // ***********************************
     return () => { socket.off("ronda_iniciada") ;socket.off( "jugador_paso_notif"); socket.off("turno_jugador"); socket.off("error"); socket.off("jugada_valida");
-      socket.off("jugador_termino"); socket.off("fin_ronda"); socket.off("fase_intercambio"); socket.off("pedir_cartas"); socket.off("dar_cartas"); socket.off("cartas_donadas"); socket.off("fase_intercambio_finalizada")
-    ;}
+      socket.off("jugador_termino"); socket.off("fin_ronda"); socket.off("fase_intercambio"); socket.off("pedir_cartas"); socket.off("dar_cartas"); 
+      socket.off("cartas_donadas"); socket.off("fase_intercambio_finalizada"); socket.off("mesa_limpia")
+    }
   }, [playerName, navigate]);
 
   const handlerIniciarPartida = () => {
