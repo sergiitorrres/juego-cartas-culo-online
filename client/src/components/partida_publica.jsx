@@ -87,6 +87,9 @@ const PartidaPublica = ({ socket, playerName}) => {
       salaId: salaIdSeleccionada
     });
   }
+  const handleVolver = () => {
+    navigate('/');
+  }
 
 
   return (
@@ -162,6 +165,7 @@ const PartidaPublica = ({ socket, playerName}) => {
             </button>
           </div>
         </div>
+        <button className={styles.botonVolver} onClick={handleVolver}>Volver</button>
       </div>
     </div>
   );

@@ -154,3 +154,30 @@
   gap: 10px;
   align-items: center;
 }
+/* Botón de Volver */
+.botonVolver {
+  position: absolute; /* Se coloca fuera del flujo normal (esquina superior izq) */
+  top: 20px;
+  left: 20px;
+  
+  background-color: transparent; /* Fondo transparente o semi-oscuro */
+  color: #f3e5ab; /* Color claro para destacar en el fondo azul */
+  border: 2px solid #f3e5ab;
+  
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-family: 'Georgia', serif;
+  font-size: 1rem;
+  cursor: pointer;
+  
+  transition: all 0.3s ease;
+  z-index: 10; /* Asegura que quede por encima de todo */
+}
+
+.botonVolver:hover {
+  background-color: #f3e5ab; /* Al pasar el ratón se invierten colores */
+  color: #2c3e50;
+  box-shadow: 0 0 10px rgba(243, 229, 171, 0.5); /* Pequeño brillo */
+  transform: scale(1.05);
+}

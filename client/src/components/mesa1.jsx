@@ -240,7 +240,7 @@ const Mesa = ({playerName, socket}) => {
             
           <img
           alt = {carta.id}
-          src={`/cartas/${carta.img}`}
+          src={`/assets/images/cartas/${carta.id}.png`}
           ></img>
 
           </button>

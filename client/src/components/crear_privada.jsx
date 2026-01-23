@@ -78,6 +78,10 @@ const CrearPrivada = ({ socket, playerName}) => {
       salaId: salaUnirseId
     });
 
+    const handleVolver = () => {
+    navigate('/');
+  }
+
   }
 
   return (
@@ -133,6 +137,7 @@ const CrearPrivada = ({ socket, playerName}) => {
 
 
       </div>
+      <button className={styles.botonVolver} onClick={handleVolver}>Volver</button>
     </div>
   );
 };
