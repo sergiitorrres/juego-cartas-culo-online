@@ -4,10 +4,11 @@ const Mesa = require("./mesa");
 const Baraja = require("./baraja");
 
 class Sala {
-    constructor(id, config) {
+    constructor(id, config,privacidad) {
         this.id = id
         this.estado = constantes?.ESTADOS?.LOBBY || "LOBBY"
         this.ronda = 0
+        this.privacidad = privacidad
 
         const limite = config?.maxJugadores || 4;
         this.maxJugadores = [4, 5, 6].includes(limite) ? limite : 4;

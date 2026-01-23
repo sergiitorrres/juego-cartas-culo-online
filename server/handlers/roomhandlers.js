@@ -5,14 +5,18 @@ const Sala = require("../game/sala");
 const { ESTADOS } = require("../game/constantes");
 
 const obtenerSalasPublicas = () => {
-    return Object.values(rooms).map(sala => ({
+    
+    return Object.values(rooms)
+    .filter((sala) => !sala.privacidad).map(sala => ({
+        
         id: sala.id,
+        privacidad: sala.privacidad,
         cantJugadores: sala.jugadores.length,
         maxJugadores: sala.maxJugadores,
         modo: sala.preferenciaBaraja48 ? "48 Cartas" : "40 Cartas",
         jugadores: sala.jugadores.map(j => j.nombre), // Solo nombres
         estado: sala.estado
-    }));
+    }))
 };
 
 function generarIdUnico(){
@@ -39,7 +43,7 @@ module.exports = (io, socket) => {
     });
     
     socket.on("crear_sala", (data, callback) => {
-        let { nombre, salaId, config } = data;
+        let { nombre, salaId, config,privacidad } = data;
 
         if (!nombre) {
             return socket.emit("error", { mensaje: "Falta el nombre del jugador" });
@@ -53,7 +57,7 @@ module.exports = (io, socket) => {
             }
         }
 
-        rooms[salaId] = new Sala(salaId, config);
+        rooms[salaId] = new Sala(salaId, config,privacidad);
         console.log(`Sala iniciada: ${salaId}`);
         
         const partida = rooms[salaId];
@@ -69,6 +73,7 @@ module.exports = (io, socket) => {
         // Avisa a todos incluyendome a mi
         io.to(salaId).emit("sala_asignada", {jugadores: partida.jugadores})
         console.log(`${nombre} se unió a ${salaId}`);
+        
          io.emit("salas_publicas", { salas: obtenerSalasPublicas() });
     });
     

@@ -39,12 +39,12 @@ const PartidaPublica = ({ socket, playerName}) => {
 
     socket.on("sala_asignada", (data) => {
         console.log("Me han asignado la sala:", data.salaId);
-        navigate('/lobby1');
+        navigate(`/mesa1/${data.salaId}`);
     });
 
     socket.on("jugador_unido", (data) => {
       console.log("¡Te has unido a la sala!", data);
-      navigate('/lobby1');
+      navigate(`/mesa1/${socket.salaId}`);
     });
 
     
@@ -68,6 +68,7 @@ const PartidaPublica = ({ socket, playerName}) => {
 
     socket.emit('crear_sala', { 
       nombre: playerName,
+      privacidad: false,
       salaId: null, // null para que genere un ID
       config: {
         maxJugadores: config.maxJugadores,

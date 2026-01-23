@@ -10,7 +10,7 @@ import Test from './components/test';
 import Mesa from './components/mesa1';
 import PartidaPublica from './components/partida_publica';
 
-const socket = io('http://localhost:3000')
+const socket = io()
 
 function App() {
 

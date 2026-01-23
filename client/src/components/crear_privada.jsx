@@ -59,6 +59,7 @@ const CrearPrivada = ({ socket, playerName}) => {
     socket.emit('crear_sala', { 
       nombre: playerName,
       salaId: salaCrearId,
+      privacidad: true,
       config: {
         maxJugadores: config.maxJugadores,
         baraja48: config.baraja48
