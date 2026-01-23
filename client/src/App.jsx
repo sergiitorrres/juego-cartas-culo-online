@@ -24,7 +24,8 @@ function App() {
       <Route path = "/crear_privada" element = {<CrearPrivada socket={socket} playerName={playerName} />}/>
       <Route path = "/test" element = {<Test />}/>
       <Route path = "/lobby" element = {<Lobby1 />}/>
-      <Route path = "/mesa" element = {<Mesa />}/>
+      
+      <Route path="/mesa1/:id" element={<Mesa socket={socket} />} />
       <Route path = "/test" element = {<Test />}/>
       <Route path = "/partida_publica" element = {<PartidaPublica socket={socket} playerName={playerName} />}/>
 

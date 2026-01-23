@@ -26,7 +26,6 @@ const CrearPrivada = ({ socket, playerName}) => {
 
     socket.on("jugador_unido", (data) => {
       console.log("¡Te has unido a la sala!", data);
-      navigate('/lobby1');
     });
 
 
@@ -34,6 +33,15 @@ const CrearPrivada = ({ socket, playerName}) => {
     console.log("Info del error:", data);
     alert(`Error: ${data.mensaje}`);
     });
+
+    socket.on("sala_asignada" , (data) => {
+      if(data && data.salaId){
+      navigate(`/mesa1/${data.salaId}`)
+      }else{
+        console.error("No se recibió un ID de sala válido", data);
+      }
+
+    })
 
     return(() => {
       socket.off("jugador_unido");
@@ -55,6 +63,7 @@ const CrearPrivada = ({ socket, playerName}) => {
         maxJugadores: config.maxJugadores,
         baraja48: config.baraja48
       } 
+    
     });
   }
 

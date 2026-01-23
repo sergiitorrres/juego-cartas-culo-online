@@ -67,7 +67,7 @@ module.exports = (io, socket) => {
         socket.emit("sala_asignada", { salaId: salaId });
 
         // Avisa a todos incluyendome a mi
-        io.to(salaId).emit("jugador_unido", {jugadores: partida.jugadores})
+        io.to(salaId).emit("sala_asignada", {jugadores: partida.jugadores})
         console.log(`${nombre} se unió a ${salaId}`);
          io.emit("salas_publicas", { salas: obtenerSalasPublicas() });
     });
