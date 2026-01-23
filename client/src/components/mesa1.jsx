@@ -218,7 +218,7 @@ const Mesa = ({playerName, socket}) => {
           className = {styles.boton_pasar}
           type="button"
           onClick={handlerPasarTurno}
-          disabled={turno !== socket?.id}
+          disabled={turno !== socket?.id || cartasMesa.length === 0}
         >
           Pasar
         </button>
