@@ -166,7 +166,7 @@ useEffect(() => {
   const handlerconfirmarSalida = () => {
     // El usuario dijo SI
     socket.emit("salir_sala"); // Avisamos al server (rompe la partida)
-    navigate('/inicio1'); // Nos vamos a la pantalla de inicio
+    navigate('/'); // Nos vamos a la pantalla de inicio
   };
 
   const handlercancelarSalida = () => {
