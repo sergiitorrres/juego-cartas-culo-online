@@ -11,6 +11,7 @@ import Mesa from './components/mesa1';
 import PartidaPublica from './components/partida_publica';
 
 // --- PARA EJECUTAR EN LOCAL ---
+// --- PARA EJECUTAR EN LOCAL ---
 // Detectamos si estamos en local (localhost) o en producción (dominio real)
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 

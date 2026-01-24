@@ -14,6 +14,9 @@ const Mesa = ({playerName, socket}) => {
   const [miRol, setMiRol] = useState();
   const [seleccionadas, setSeleccionadas] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [jugadoresLista,setJugadoresLista] = useState([]);
+  const [numeroJugadores,setNumeroJugadores] = useState()
+
 
 useEffect(() => {
     
@@ -35,25 +38,23 @@ useEffect(() => {
     //if (!playerName) navigate('/');
     if (!socket) return;
 
+    socket.on ("jugador_unido" , (data) => {
+      setJugadoresLista(data.jugadores);
+    })
+
     socket.on("ronda_iniciada",(data) =>{
       setMisCartas(data.misCartas);
       setRivales(data.jugadores.filter(j => j.id !== socket.id));
       setEstado(ESTADOS.JUGANDO);
     })
 
-    socket.on("jugador_paso_notif",(data) =>{
-      //MODIFICAR PARA QUE SE VEA CUANDO PASA
-      if(data.jugadorId !== socket.id) { // FALTA CSS
-        setRivales(prevRiv => {
-          prevRiv.forEach(rival => {
-            if(rival === data.jugadorId) {
-              rival.haPasado = true;
-            }
-          })
-          return prevRiv;
-        });
-      }
-    })
+    socket.on("jugador_paso_notif", (data) => {
+        setRivales(prevRiv => 
+          prevRiv.map(rival => 
+            rival.id === data.jugadorId ? { ...rival, haPasado: true } : rival
+        )
+        );
+      });
 
     socket.on("turno_jugador",(data) =>{
       setTurno(data.turno);
@@ -169,6 +170,8 @@ useEffect(() => {
     socket.on("fase_intercambio_finalizada", (data) => {
       setEstado(ESTADOS.JUGANDO);
     })
+
+    
     
     // ***********************************
     //  ======= CIERRE DE SOCKETS =======
@@ -178,6 +181,14 @@ useEffect(() => {
       socket.off("cartas_donadas"); socket.off("fase_intercambio_finalizada"); socket.off("mesa_limpia")
     }
   }, [playerName, navigate, socket]);
+
+  // --- CÁLCULOS PARA EL RENDERIZADO ---
+// --- ESTO DEBE IR JUSTO ANTES DEL RETURN ---
+const totalConectados = rivales.length + 1;
+const maxCapacidad = numeroJugadores || 6;
+const huecosDisponibles = Math.max(0, maxCapacidad - totalConectados);
+// El array de sitios debe estar disponible para el mapeo
+const sitios = ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der'];
 
   const resetHaPasado = () => {
     setRivales(prevRiv => prevRiv.map(rival => ({ ...rival, haPasado: false }))
@@ -249,37 +260,52 @@ useEffect(() => {
       )}
 
       {/* --- ZONA 1: OPONENTES (ARRIBA) --- */}
-      <div className={styles['opponents-row']}>
-       {rivales.map((rival,posicion_pantalla) => (
-        <div key= {rival.id} className={styles.jugador_rival}>
-          <span className={styles.nombre_rival}> {rival.nombre} </span>
-          <span> {rival.numCartas} </span>
-          <img alt={rival.rol} src= 'PONER AQUI LA URL DE LA FOTO DEL ROL'/>
-          <img alt="avatar" className={styles.avatar} src="foto_avatar" />
+{rivales.map((rival, index) => (
+  <div 
+    key={rival.id} 
+    className={`${styles.jugador_rival} ${styles[sitios[index]]} ${rival.haPasado ? styles.haPasado : ''}`}
+  >
+    <span className={styles.nombre_rival}>{rival.nombre}</span>
+    
+    {/* AVATAR PEQUEÑO (FIJADO POR CSS) */}
+    <img alt="avatar" className={styles.avatar} src="/images/avatar-de-usuario.png" />
+    
+    {/* BARRA DE TIEMPO RIVAL */}
+    <div className={styles['timer-container']}>
+      <div 
+        className={styles['timer-bar']}
+        style={{ 
+          width: rival.id === turno ? '100%' : '0%', 
+          transition: rival.id === turno ? 'width 15s linear' : 'none' 
+        }}
+      ></div>
+    </div>
 
-          {rival.posicionFinal > 0 ?
-          (<span className={styles.victoria}> Termino en posicion {rival.posicionFinal}</span>):
-          (<div className={styles.contadorDeCartas}>
-            <img alt= '' src='INSERTAR AQUI URL QUE PONGAMOS PARA ICNONO DEL'/>
-            <span> {rival.numCartas} </span>
-          </div>)
-          }
-          {rival.id === turno &&
-            <span className={styles.pensando}> ◀◀ Pensando </span>
-          }
-        </div>
+    <div className={styles.contadorDeCartas}>
+       <span>{rival.numCartas} 🎴</span>
+    </div>
+  </div>
+))}
 
-       )
       
-        
-      )}
-
-      </div> 
 
 
       {/* --- ZONA 2: CENTRO DE LA MESA --- */}
       <div className={styles['table-center']}>
         <div className={styles['pila-central']}>
+          {estado === ESTADOS.LOBBY && (
+            <div className={styles.contenedorLobby}>
+              <h3>Esperando jugadores ({rivales.length + 1}/{numeroJugadores || 6})</h3>
+            <div className={styles.listaEspera}>
+            <div className={styles.fichaEspera}>{playerName} (Tú)</div>
+            {rivales.map(r => <div key={r.id} className={styles.fichaEspera}>{r.nombre}</div>)}
+                {/* Pintamos los huecos vacíos */}
+            {[...Array(huecosDisponibles)].map((_, i) => (
+        <div key={i} className={styles.fichaHueco}>Esperando...</div>
+      ))}
+    </div>
+  </div>
+)}
           {cartasMesa.map((carta,index) =>(
             <img key={index} alt = {carta.id} src={`/assets/images/cartas/${carta.id}.png`}/>
           ))}
@@ -337,7 +363,7 @@ useEffect(() => {
           Lanzar
           </button>
           
-          {estado === ESTADOS.INTERCAMBIANDO &&
+          {estado === ESTADOS.INTERCAMBIO &&
             (miRol === ROLES.VICE_PRESIDENTE || miRol === ROLES.PRESIDENTE) && (
               <button
                 onClick={() => handlerDarCartas(seleccionadas)}
@@ -354,6 +380,15 @@ useEffect(() => {
             <img alt="icono rol" src="/assets/images/culo_rol.png" />
             <span>{playerName} ({miRol || 'Sin Rol'})</span>
          </div>
+         <div className={styles['timer-container']}>
+          <div 
+            className={styles['timer-bar']}
+            style={{ 
+            width: socket?.id === turno ? '100%' : '0%', // Comprueba si es tu turno
+            transition: socket?.id === turno ? 'width 15s linear' : 'none' 
+          }}
+          ></div>
+            </div>
       </div>
 
     </div> 
