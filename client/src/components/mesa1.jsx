@@ -41,11 +41,9 @@ const Mesa = ({playerName, socket}) => {
     socket.on("jugada_valida", (data) => {
       setCartaMesa(data.cartas);
       if(data.jugadorId === socket.id) {
-        const idsJugadas = data.cartas.map(c => c.id);
-        setMisCartas(prevCartas =>
-          prevCartas.filter(c => !idsJugadas.includes(c.id))
-        );
-        setMisCartas(cartas);
+        setMisCartas(prevCartas => {
+          return prevCartas.filter(c => !data.cartas.find(dc => dc.id === c.id));
+        });
         setSeleccionadas([]);
       }
     })
@@ -81,11 +79,17 @@ const Mesa = ({playerName, socket}) => {
       if(!flag) {
         setMiRol(ROLES.NEUTRO);
       }
+
+      setTimeout(() => {
+        setCartaMesa([]);
+      }, 2000);
     }) 
 
     socket.on("mesa_limpia", (data) => {
       const motivo = data.motivo; // Probablemente no necesario
-      setCartaMesa([]);
+      setTimeout(() => {
+        setCartaMesa([]);
+      }, 2000);
     })
 
     // ======= INTERCAMBIOS =======
@@ -97,18 +101,21 @@ const Mesa = ({playerName, socket}) => {
     socket.on("pedir_cartas", (data) => {
       const cant = data.cantidad;
       const forzado = data.forzado;
-      let cartas = [...misCartas];
 
       if(forzado) {
-        cartas.splice(0, cant);
+        setTimeout(() => {
+          setMisCartas(prevCartas => {
+          const cartasDonadas = prevCartas.slice(0, cant);
 
-        let indices = [0]
-        if(cant == 2) {
-          indices.push(1);
-        }
+          const indices = cartasDonadas.map(c =>
+            prevCartas.findIndex(pc => pc.id === c.id)
+          );
 
-        socket.emit("dar_cartas", {indices: indices})
+          socket.emit("dar_cartas", { indices });
 
+          return prevCartas.filter(c => !cartasDonadas.includes(c));
+          });
+        }, 5000);
       } else {
         // MODIFICAR Y AÑADIR POP UP??
         // Gestionar seleccion de cartas a donar !!!
@@ -119,10 +126,11 @@ const Mesa = ({playerName, socket}) => {
       const from = data.from; // Para hacer animacion en el futuro
       const nuevasCartas = data.cartas;
 
-      let cartas = [...misCartas];
-      cartas.push(nuevasCartas);
-      cartas.sort((a, b) => b.fuerza - a.fuerza);
-      setMisCartas(cartas);
+      setMisCartas(prevCartas => {
+        let newMano = [...prevCartas, ...nuevasCartas];
+        newMano.sort((a, b) => b.fuerza - a.fuerza);
+        return newMano;
+      });
     })
 
     socket.on("fase_intercambio_finalizada", (data) => {
@@ -159,16 +167,15 @@ const Mesa = ({playerName, socket}) => {
   }
 
   const handlerDarCartas = (indices) => {
-    indices.sort((a, b) => b - a);
-    let cartas = [...misCartas];
-    for(let i = 0; i < indices.length; i++) {
-      cartas.splice(indices[i], 1);
-    }
+    setMisCartas(prevCartas => {
+      const setIndices = new Set(indices);
 
-    setMisCartas(cartas);
+      const restantes = prevCartas.filter((_, idx) => !setIndices.has(idx));
 
-    socket.emit("dar_cartas", {indices: indices});
-  } 
+      socket.emit("dar_cartas", { indices });
+      return restantes;
+    });
+  };
   
   return (
     // CONTENEDOR PADRE
