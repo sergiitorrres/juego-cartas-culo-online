@@ -43,6 +43,16 @@ useEffect(() => {
 
     socket.on("jugador_paso_notif",(data) =>{
       //MODIFICAR PARA QUE SE VEA CUANDO PASA
+      if(data.jugadorId !== socket.id) { // FALTA CSS
+        setRivales(prevRiv => {
+          prevRiv.forEach(rival => {
+            if(rival === data.jugadorId) {
+              rival.haPasado = true;
+            }
+          })
+          return prevRiv;
+        });
+      }
     })
 
     socket.on("turno_jugador",(data) =>{
@@ -100,13 +110,19 @@ useEffect(() => {
       setTimeout(() => {
         setCartaMesa([]);
       }, 2000);
-    }) 
 
+      // Reset Ha Pasado
+      resetHaPasado();
+    }) 
+    
     socket.on("mesa_limpia", (data) => {
       const motivo = data.motivo; // Probablemente no necesario
       setTimeout(() => {
         setCartaMesa([]);
       }, 2000);
+
+      // Reset Ha Pasado
+      resetHaPasado();
     })
 
     // ======= INTERCAMBIOS =======
@@ -162,6 +178,12 @@ useEffect(() => {
       socket.off("cartas_donadas"); socket.off("fase_intercambio_finalizada"); socket.off("mesa_limpia")
     }
   }, [playerName, navigate, socket]);
+
+  const resetHaPasado = () => {
+    setRivales(prevRiv => prevRiv.map(rival => ({ ...rival, haPasado: false }))
+);
+
+  }
 
   const handlerconfirmarSalida = () => {
     // El usuario dijo SI
@@ -269,9 +291,9 @@ useEffect(() => {
             type="button"
             onClick={handlerIniciarPartida}
           > 
-        INICIAR PARTIDA 
-      </button>
-    )}
+            INICIAR PARTIDA 
+            </button>
+          )}
         
           <button
             className = {styles.boton_pasar}
@@ -314,6 +336,19 @@ useEffect(() => {
           >    
           Lanzar
           </button>
+          
+          {estado === ESTADOS.INTERCAMBIANDO &&
+            (miRol === ROLES.VICE_PRESIDENTE || miRol === ROLES.PRESIDENTE) && (
+              <button
+                onClick={() => handlerDarCartas(seleccionadas)}
+                disabled={turno !== socket?.id}
+                className={styles.boton_dar_cartas}
+              >
+                Dar cartas
+              </button>
+          )}
+
+
          <div className={styles.mi_perfil}>
             <img alt="mi avatar" src="/assets/images/avatar-de-usuario.png" />
             <img alt="icono rol" src="/assets/images/culo_rol.png" />

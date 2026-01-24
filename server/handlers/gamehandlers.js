@@ -163,6 +163,10 @@ module.exports = (io, socket) => {
         const sala = rooms[salaId]
         
         const info = sala.realizarIntercambio(socket.id, indices)
+        if(!info.ok) {
+            io.to(socket.id).emit("error", {mensaje: info.error})
+        }
+        
         io.to(info.destinatarioId).emit("cartas_donadas", {from: socket.id, cartas: info.nuevasCartas})
 
         if(info.faseTerminada) {

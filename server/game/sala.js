@@ -148,28 +148,29 @@ class Sala {
     realizarIntercambio(clientId, indicesCartas) {
         if (this.estado !== constantes.ESTADOS.INTERCAMBIO) return { error: 'No es fase de intercambio' };
         if (!this.intercambiosPendientes.includes(clientId)) {
-            return { error: 'No tienes intercambios pendientes' };
+            return { ok: false, error: 'No tienes intercambios pendientes' };
         }
 
         const jugadorEnvia = this.jugadores.find(j => j.id === clientId);
-        if (!jugadorEnvia) return { error: 'Jugador no encontrado' };
+        if (!jugadorEnvia) return { ok: false, error: 'Jugador no encontrado' };
 
         let rolDestino = null;
+        let cantidad = 0
         switch (jugadorEnvia.rol) {
-            case constantes.ROLES.CULO: rolDestino = constantes.ROLES.PRESIDENTE; break;
-            case constantes.ROLES.VICE_CULO: rolDestino = constantes.ROLES.VICE_PRESIDENTE; break;
-            case constantes.ROLES.VICE_PRESIDENTE: rolDestino = constantes.ROLES.VICE_CULO; break;
-            case constantes.ROLES.PRESIDENTE: rolDestino = constantes.ROLES.CULO; break;
-            default: return { error: 'Tu rol no intercambia cartas' };
+            case constantes.ROLES.CULO: rolDestino = constantes.ROLES.PRESIDENTE; cantidad = 2; break;
+            case constantes.ROLES.VICE_CULO: rolDestino = constantes.ROLES.VICE_PRESIDENTE; cantidad = 1; break;
+            case constantes.ROLES.VICE_PRESIDENTE: rolDestino = constantes.ROLES.VICE_CULO; cantidad = 1; break;
+            case constantes.ROLES.PRESIDENTE: rolDestino = constantes.ROLES.CULO; cantidad = 2; break;
+            default: return {ok: false, error: 'Tu rol no intercambia cartas' };
         }
 
         const jugadorDestino = this.jugadores.find(j => j.rol === rolDestino);
-        if (!jugadorDestino) return { error: 'No se encontró al destinatario' };
+        if (!jugadorDestino) return {ok: false, error: 'No se encontró al destinatario' };
 
         
         // Recuperar objetos carta
         const cartasAEnviar = indicesCartas.map(indice => jugadorEnvia.mano[indice]).filter(c => c !== undefined);
-        if (cartasAEnviar.length === 0) return { error: 'Indices inválidos' };
+        if (cartasAEnviar.length !== cantidad ) return {ok: false, error: 'No has entregado' + cantidad + ' cartas' };
 
         // Añadir las cartas al Destino
         jugadorDestino.mano.push(...cartasAEnviar);
@@ -183,7 +184,7 @@ class Sala {
         this.intercambiosPendientes = this.intercambiosPendientes.filter(id => id !== clientId);
 
         return {
-            exito: true,
+            ok: true,
             destinatarioId: jugadorDestino.id,
             nuevasCartas: cartasAEnviar,
             faseTerminada: this.intercambiosPendientes.length === 0
