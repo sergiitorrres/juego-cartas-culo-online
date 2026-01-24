@@ -174,6 +174,10 @@ useEffect(() => {
     setMostrarModal(false); // Ocultamos modal y seguimos jugando
   };
 
+  const handlerPulsarSalir = () => {
+    setMostrarModal(true);
+};
+
   const handlerIniciarPartida = () => {
     socket.emit("iniciar_partida",{});
   }
@@ -211,6 +215,24 @@ useEffect(() => {
       data-fase="Lobby"
       data-jugadores="0" // Acuérdate de poner "data-"
     >
+      <button
+        className={styles.boton_pasar} // Reutilizamos el estilo para que se vea igual
+        type="button"
+        onClick={handlerPulsarSalir}
+        style={{
+            position: 'absolute',  // Flotante
+            top: '20px',           // Separación del techo
+            left: '20px',          // Separación de la izquierda
+            zIndex: 100,           // Por encima de todo
+            backgroundColor: '#c62828', 
+            color: 'white', 
+            borderColor: '#8e0000',
+            width: 'auto',         // Ajuste automático
+            padding: '10px 20px'   // Un poco de aire
+        }}
+      >
+        ⏏ SALIR
+      </button>
       
       {mostrarModal && (
         <div className={styles.modalOverlay}>
@@ -281,6 +303,8 @@ useEffect(() => {
           >
           Pasar
         </button>
+
+        
         
         </div>  
       </div>
