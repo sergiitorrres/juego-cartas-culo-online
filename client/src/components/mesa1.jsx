@@ -17,6 +17,7 @@ const Mesa = ({playerName, socket}) => {
   const [jugadoresLista,setJugadoresLista] = useState([]);
   const [numeroJugadores,setNumeroJugadores] = useState()
 
+  var backUp = [];
 
 useEffect(() => {
     
@@ -38,7 +39,7 @@ useEffect(() => {
     //if (!playerName) navigate('/');
     if (!socket) return;
 
-    socket.on ("jugador_unido" , (data) => {
+    socket.on("jugador_unido" , (data) => {
       setJugadoresLista(data.jugadores);
     })
 
@@ -64,6 +65,17 @@ useEffect(() => {
       //MODIFICAR PARA QUE SE MANDE EL TEXTO DE TODOS LOS FALLOS
       console.log(`Info error: ${data}`);
       alert(`Error: ${data.mensaje}`);
+
+      // Fallos en el Intercambio
+      if(backUp.length !== 0) {
+        setMisCartas(prevCartas => {
+          let cartasReales = [...prevCartas, ...backUp]
+          cartasReales.sort((a, b) => b.fuerza - a.fuerza);
+          return cartasReales;
+        })
+
+        backUp = [];
+      }
     })
     
     socket.on("jugada_valida", (data) => {
@@ -85,28 +97,29 @@ useEffect(() => {
     });
 
     socket.on("fin_ronda", (data) => {
-      const ranking = data.ranking;
-      const roles = [ROLES.PRESIDENTE, ROLES.VICE_PRESIDENTE, ROLES.VICE_CULO, ROLES.CULO];
-      let flag = false;
+      const roles = [
+        ROLES.PRESIDENTE,
+        ROLES.VICE_PRESIDENTE,
+        ROLES.VICE_CULO,
+        ROLES.CULO
+      ];
 
-      for(let i = 0; i < ranking.length; i++) {
-        // El servidor envía: { jugadorId, posicion }
-        setRivales((prevRivales) => 
-          prevRivales.map((rival) =>
-          // Si el ID coincide, actualizamos su posición
-          rival.id === ranking[i].jugadorId ? { ...rival, rol: roles[i] } : rival // Si no coincide, devolvemos el rival sin cambios
+      let miRolNuevo = ROLES.NEUTRO;
+
+      data.ranking.forEach(entry => {
+        setRivales(prev =>
+          prev.map(r =>
+            r.id === entry.jugadorId ? { ...r, rol: entry.rol } : r
           )
         );
-        
-        if(ranking[i].id === socket.id) {
-          setMiRol(roles[i]);
-          flag = true;
-        }
-      }
 
-      if(!flag) {
-        setMiRol(ROLES.NEUTRO);
-      }
+        if (entry.jugadorId === socket.id) {
+          miRolNuevo = entry.rol;
+        }
+      });
+
+      setMiRol(miRolNuevo);
+
 
       setTimeout(() => {
         setCartaMesa([]);
@@ -141,11 +154,7 @@ useEffect(() => {
           setMisCartas(prevCartas => {
           const cartasDonadas = prevCartas.slice(0, cant);
 
-          const indices = cartasDonadas.map(c =>
-            prevCartas.findIndex(pc => pc.id === c.id)
-          );
-
-          socket.emit("dar_cartas", { indices });
+          socket.emit("dar_cartas", { cartas: cartasDonadas });
 
           return prevCartas.filter(c => !cartasDonadas.includes(c));
           });
@@ -158,7 +167,7 @@ useEffect(() => {
 
     socket.on("cartas_donadas", (data) => {
       const from = data.from; // Para hacer animacion en el futuro
-      const nuevasCartas = data.cartas;
+      const nuevasCartas = data.cartas
 
       setMisCartas(prevCartas => {
         let newMano = [...prevCartas, ...nuevasCartas];
@@ -232,8 +241,9 @@ const sitios = ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der'];
       const setIndices = new Set(indices);
 
       const restantes = prevCartas.filter((_, idx) => !setIndices.has(idx));
+      backUp = prevCartas.filter((_, idx) => setIndices.has(idx));
 
-      socket.emit("dar_cartas", { indices });
+      socket.emit("dar_cartas", { cartas: backUp });
       return restantes;
     });
   };
@@ -363,13 +373,11 @@ const sitios = ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der'];
           Lanzar
           </button>
           
-          {estado === ESTADOS.INTERCAMBIO &&
-            (miRol === ROLES.VICE_PRESIDENTE || miRol === ROLES.PRESIDENTE) && (
+          {estado === ESTADOS.INTERCAMBIO &&(
               <button
                 onClick={() => handlerDarCartas(seleccionadas)}
-                disabled={turno !== socket?.id}
                 className={styles.boton_dar_cartas}
-              >
+                disabled = {![ROLES.PRESIDENTE, ROLES.VICE_PRESIDENTE].includes(miRol)}              >
                 Dar cartas
               </button>
           )}

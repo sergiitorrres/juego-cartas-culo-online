@@ -158,16 +158,27 @@ module.exports = (io, socket) => {
     });
 
     socket.on("dar_cartas", (data, callback) => {
-        const indices = data.indices
+        const cartas = data.cartas
         const salaId = socket.data.salaId
         const sala = rooms[salaId]
-        
-        const info = sala.realizarIntercambio(socket.id, indices)
-        if(!info.ok) {
-            io.to(socket.id).emit("error", {mensaje: info.error})
+
+        //console.log("salaId:", socket.data.salaId);
+        //console.log("rooms keys:", Object.keys(rooms));
+
+        if (!sala) {
+            socket.emit("error", { error: "Sala no encontrada o no válida" });
+            return;
         }
         
-        io.to(info.destinatarioId).emit("cartas_donadas", {from: socket.id, cartas: info.nuevasCartas})
+        const info = sala.realizarIntercambio(socket.id, cartas)
+        if(!info.ok) {
+            io.to(socket.id).emit("error", {mensaje: info.error})
+            return;
+        } else if(info.interDone) {
+            io.to(info.jugador1).emit("cartas_donadas", {cartas: info.cartasParaJ1, from: info.jugador2})
+
+            io.to(info.jugador2).emit("cartas_donadas", {cartas: cartasParaJ1, from: info.jugador1})
+        }
 
         if(info.faseTerminada) {
             io.to(salaId).emit("fase_intercambio_finalizada", {});

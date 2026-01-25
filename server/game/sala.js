@@ -23,6 +23,8 @@ class Sala {
 
         // ESTADO INTERCAMBIO
         this.intercambiosPendientes = []
+        this.intercambiosRealizados = []
+        this.mapa = new Map()
         this.baraja = null
 
         this.preferenciaBaraja48 = config?.baraja48 || false;
@@ -125,7 +127,8 @@ class Sala {
                 evento: "pedir_cartas",
                 data: { rol: constantes.ROLES.PRESIDENTE, cantidad: 2, forzado: false, destino: constantes.ROLES.CULO }
             });
-            this.intercambiosPendientes.push(culo.id, presidente.id);
+            this.intercambiosPendientes.push(culo.id);
+            this.intercambiosPendientes.push(presidente.id)
         }
 
         if (vicePresi && viceCulo) {
@@ -139,17 +142,18 @@ class Sala {
                 evento: "pedir_cartas",
                 data: { rol: constantes.ROLES.VICE_PRESIDENTE, cantidad: 1, forzado: false, destino: constantes.ROLES.VICE_CULO }
             });
-            this.intercambiosPendientes.push(viceCulo.id, vicePresi.id);
+            this.intercambiosPendientes.push(viceCulo.id);
+            this.intercambiosPendientes.push(vicePresi.id)
         }
 
         return { tipo: "intercambio_activo", instrucciones };
     }
 
-    realizarIntercambio(clientId, indicesCartas) {
-        if (this.estado !== constantes.ESTADOS.INTERCAMBIO) return { error: 'No es fase de intercambio' };
-        if (!this.intercambiosPendientes.includes(clientId)) {
+    realizarIntercambio(clientId, cartasAEnviar) {
+        if (this.estado !== constantes.ESTADOS.INTERCAMBIO) return {ok: false, error: 'No es fase de intercambio' };
+        /*if (!this.intercambiosPendientes.includes(clientId)) {
             return { ok: false, error: 'No tienes intercambios pendientes' };
-        }
+        }*/
 
         const jugadorEnvia = this.jugadores.find(j => j.id === clientId);
         if (!jugadorEnvia) return { ok: false, error: 'Jugador no encontrado' };
@@ -167,56 +171,73 @@ class Sala {
         const jugadorDestino = this.jugadores.find(j => j.rol === rolDestino);
         if (!jugadorDestino) return {ok: false, error: 'No se encontró al destinatario' };
 
-        
         // Recuperar objetos carta
-        const cartasAEnviar = indicesCartas.map(indice => jugadorEnvia.mano[indice]).filter(c => c !== undefined);
-        if (cartasAEnviar.length !== cantidad ) return {ok: false, error: 'No has entregado' + cantidad + ' cartas' };
+        if (cartasAEnviar.length !== cantidad ) return {ok: false, error: 'No has entregado ' + cantidad + ' cartas' };
 
-        // Añadir las cartas al Destino
-        jugadorDestino.mano.push(...cartasAEnviar);
+        let interDone = false
+        let cartasFromJD = undefined
+        if(this.intercambiosRealizados.includes(jugadorDestino.id)) {
+            cartasFromJD = this.mapa.get(jugadorDestino.id)
+            // Añadir las cartas al Destino
+            jugadorEnvia.mano.push(...cartasFromJD);
+            // Borrar las cartas del Origen
+            jugadorDestino.mano = jugadorDestino.mano.filter(carta => !cartasFromJD.includes(carta));
 
-        // Borrar las cartas del Origen
-        jugadorEnvia.mano = jugadorEnvia.mano.filter(carta => !cartasAEnviar.includes(carta));
+            // Añadir las cartas al Destino
+            jugadorDestino.mano.push(...cartasAEnviar);
+            // Borrar las cartas del Origen
+            jugadorEnvia.mano = jugadorEnvia.mano.filter(carta => !cartasAEnviar.includes(carta));
 
-        jugadorDestino.mano.sort((a, b) => b.fuerza - a.fuerza);
-        jugadorEnvia.mano.sort((a, b) => b.fuerza - a.fuerza);
+            jugadorDestino.mano.sort((a, b) => b.fuerza - a.fuerza);
+            jugadorEnvia.mano.sort((a, b) => b.fuerza - a.fuerza);
+            interDone = true;
+            this.mapa.delete(jugadorDestino.id)
+        } else {
+            this.mapa.set(jugadorEnvia.id, cartasAEnviar)
+        }
 
         this.intercambiosPendientes = this.intercambiosPendientes.filter(id => id !== clientId);
 
         return {
             ok: true,
-            destinatarioId: jugadorDestino.id,
-            nuevasCartas: cartasAEnviar,
+            inter: interDone,
+            jugador1: jugadorEnvia.id,
+            cartasParaJ1: cartasFromJD,
+            jugador2: jugadorDestino.id,
+            cartasParaJ2: cartasAEnviar,
             faseTerminada: this.intercambiosPendientes.length === 0
         };
     }
     
     getRankings() {
-        let ranking = ["", "", "", ""] // Empieza vacio, se llena en el forEach
-        // Puntuación: presi (+2,+4,+6), vice(+1,+2,+3)
-        let ptos = 0;
-        if (this.ronda === 1) ptos = 2;
-        else if (this.ronda === 2) ptos = 4;
-        else ptos = 6;
-        
-        this.jugadores.forEach(j => {
-            if(j.rol === constantes.ROLES.PRESIDENTE) {
-                ranking[0] = j.id;
-                j.addPtos(ptos);
-            } else if (j.rol === constantes.ROLES.VICE_PRESIDENTE) {
-                ranking[1] = j.id;
-                j.addPtos(Math.floor(ptos/2));
-            } else if (j.rol === constantes.ROLES.VICE_CULO) {
-                ranking[2] = j.id;
-                j.addPtos(-Math.floor(ptos/2));
-            } else if (j.rol === constantes.ROLES.CULO) {
-                ranking[3] = j.id;
-                j.addPtos(-ptos);
-            }
+        const ranking = [];
+        const rolesOrdenados = [
+            constantes.ROLES.PRESIDENTE,
+            constantes.ROLES.VICE_PRESIDENTE,
+            constantes.ROLES.VICE_CULO,
+            constantes.ROLES.CULO
+        ];
+
+        let ptos = this.ronda === 1 ? 2 : this.ronda === 2 ? 4 : 6;
+
+        rolesOrdenados.forEach((r, index) => {
+            const jugador = this.jugadores.find(j => j.rol === r);
+            if (!jugador) return;
+
+            ranking.push({
+                jugadorId: jugador.id,
+                rol: r
+            });
+
+            if (r === constantes.ROLES.PRESIDENTE) jugador.addPtos(ptos);
+            else if (r === constantes.ROLES.VICE_PRESIDENTE) jugador.addPtos(ptos / 2);
+            else if (r === constantes.ROLES.VICE_CULO) jugador.addPtos(-ptos / 2);
+            else jugador.addPtos(-ptos);
         });
 
-        return ranking
+        return ranking;
     }
+
 
     empezarRondaNueva() {
         this.ronda++;
