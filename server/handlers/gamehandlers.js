@@ -34,7 +34,7 @@ module.exports = (io, socket) => {
     });
 
     socket.on("lanzar_cartas", (data, callback) => {
-        const {indices} = data
+        const cartasJugadas = data.cartas
         const salaId = socket.data.salaId;
         const sala = rooms[salaId]
 
@@ -49,7 +49,6 @@ module.exports = (io, socket) => {
             return socket.emit("error", { mensaje: "Has pasado turno, debes esperar a que se limpie la mesa" });
         }
 
-        const cartasJugadas = indices.map(i => jugador.mano[i]).filter(c => c);
         if (cartasJugadas.length === 0) return;
 
         const esDosDeOros = (cartasJugadas.length === 1 && cartasJugadas[0].palo === 'oros' && cartasJugadas[0].valor === 2);
@@ -177,7 +176,7 @@ module.exports = (io, socket) => {
         } else if(info.interDone) {
             io.to(info.jugador1).emit("cartas_donadas", {cartas: info.cartasParaJ1, from: info.jugador2})
 
-            io.to(info.jugador2).emit("cartas_donadas", {cartas: cartasParaJ1, from: info.jugador1})
+            io.to(info.jugador2).emit("cartas_donadas", {cartas: info.cartasParaJ2, from: info.jugador1})
         }
 
         if(info.faseTerminada) {

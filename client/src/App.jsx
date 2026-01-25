@@ -31,22 +31,22 @@ const socket = io()
 function App() {
 
   const [playerName, setPlayerName] = useState('');
+  const [numMaxJugadores, setMaxJugadores] = useState(null);
 
   return (
     // Simplemente mostramos el componente Inicio
     
     <Routes>
       <Route path= "/" element = {<Inicio setPlayerName={setPlayerName} playerName={playerName} />}   />
-      <Route path = "/crear_privada" element = {<CrearPrivada socket={socket} playerName={playerName} />}/>
+      <Route path = "/crear_privada" element = {<CrearPrivada socket={socket} playerName={playerName} setMaxJugadores={setMaxJugadores} />}/>
       <Route path = "/test" element = {<Test />}/>
       <Route path = "/lobby" element = {<Lobby1 />}/>
-      
-      <Route path="/mesa1/:id" element={<Mesa socket={socket} />} />
-      <Route path = "/test" element = {<Test />}/>
-      <Route path = "/partida_publica" element = {<PartidaPublica socket={socket} playerName={playerName} />}/>
+  
+      <Route path="/mesa1/:id" element={<Mesa socket={socket} playerName={playerName} numMaxJugadores={numMaxJugadores} />} />
+      <Route path = "/partida_publica" element = {<PartidaPublica socket={socket} playerName={playerName} setMaxJugadores={setMaxJugadores} />}/>
 
     </Routes>
-  );
+  )
 }
 
 export default App;

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ESTADOS, ROLES } from '../constantes';
 
-const Mesa = ({playerName, socket}) => {
+const Mesa = ({playerName, socket, numMaxJugadores}) => {
   const navigate = useNavigate();
   const [misCartas,setMisCartas] = useState([]);
   const [rivales,setRivales] = useState([]);
@@ -36,11 +36,12 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
-    //if (!playerName) navigate('/');
+    if (!playerName) navigate('/');
     if (!socket) return;
 
     socket.on("jugador_unido" , (data) => {
       setJugadoresLista(data.jugadores);
+      setNumeroJugadores(jugadoresLista.length + 1);
     })
 
     socket.on("ronda_iniciada",(data) =>{
@@ -152,16 +153,30 @@ useEffect(() => {
       if(forzado) {
         setTimeout(() => {
           setMisCartas(prevCartas => {
-          const cartasDonadas = prevCartas.slice(0, cant);
+            let cartasDonadas = [];
 
-          socket.emit("dar_cartas", { cartas: cartasDonadas });
+            const indexOros2 = prevCartas.findIndex(c => c.id === "oros_2");
 
-          return prevCartas.filter(c => !cartasDonadas.includes(c));
+            if (indexOros2 !== -1) {
+              const oros2 = prevCartas[indexOros2];
+              cartasDonadas.push(oros2);
+
+              if (cant === 2) {
+                const mejorRestante = prevCartas.find(c => c.id !== "oros_2");
+                if (mejorRestante) {
+                  cartasDonadas.push(mejorRestante);
+                }
+              }
+            } else {
+              cartasDonadas = prevCartas.slice(0, cant);
+            }
+
+            socket.emit("dar_cartas", { cartas: cartasDonadas });
+
+            return prevCartas.filter(c => !cartasDonadas.includes(c));
           });
+
         }, 5000);
-      } else {
-        // MODIFICAR Y AÑADIR POP UP??
-        // Gestionar seleccion de cartas a donar !!!
       }
     })
 
@@ -187,7 +202,7 @@ useEffect(() => {
     // ***********************************
     return () => { socket.off("ronda_iniciada") ;socket.off( "jugador_paso_notif"); socket.off("turno_jugador"); socket.off("error"); socket.off("jugada_valida");
       socket.off("jugador_termino"); socket.off("fin_ronda"); socket.off("fase_intercambio"); socket.off("pedir_cartas"); socket.off("dar_cartas"); 
-      socket.off("cartas_donadas"); socket.off("fase_intercambio_finalizada"); socket.off("mesa_limpia")
+      socket.off("cartas_donadas"); socket.off("fase_intercambio_finalizada"); socket.off("mesa_limpia"); socket.off("jugador_unido")
     }
   }, [playerName, navigate, socket]);
 
@@ -224,7 +239,10 @@ const sitios = ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der'];
   }
 
   const handlerLanzarCarta = (indices) => {
-    socket.emit("lanzar_cartas", {indices: indices});
+    const setIndices = new Set(indices);
+    const cartasLanzadas = misCartas.filter((_, idx) => setIndices.has(idx));
+    console.log("Cartas Lanzadas: " + cartasLanzadas)
+    socket.emit("lanzar_cartas", {cartas: cartasLanzadas});
   }
 
   const toggleSelection = (index) =>{
@@ -305,7 +323,7 @@ const sitios = ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der'];
         <div className={styles['pila-central']}>
           {estado === ESTADOS.LOBBY && (
             <div className={styles.contenedorLobby}>
-              <h3>Esperando jugadores ({rivales.length + 1}/{numeroJugadores || 6})</h3>
+              <h3>Esperando jugadores ({jugadoresLista.length + 1}/{numMaxJugadores})</h3>
             <div className={styles.listaEspera}>
             <div className={styles.fichaEspera}>{playerName} (Tú)</div>
             {rivales.map(r => <div key={r.id} className={styles.fichaEspera}>{r.nombre}</div>)}

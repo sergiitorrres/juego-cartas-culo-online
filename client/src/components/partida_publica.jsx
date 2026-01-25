@@ -3,7 +3,7 @@ import styles from './partida_publica.module.css';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 
-const PartidaPublica = ({ socket, playerName}) => {
+const PartidaPublica = ({ socket, playerName, setMaxJugadores}) => {
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -12,6 +12,7 @@ const PartidaPublica = ({ socket, playerName}) => {
   
   const [salas, setSalas] = useState([]);
   const [selectedConfig, setSelectedConfig] = useState(0);
+  var numMaxJugadores = 0;
   
   const configuraciones = [
     {id: 0, maxJugadores: 4, baraja48: false, label: '4 personas. - 40 Cartas'},
@@ -64,6 +65,7 @@ const PartidaPublica = ({ socket, playerName}) => {
   const handleCrearPartida = () => {
     const config = configuraciones[selectedConfig]
 
+    setMaxJugadores(config.maxJugadores);
     console.log("Creando sala publica:", config)
 
     socket.emit('crear_sala', { 

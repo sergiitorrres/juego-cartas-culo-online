@@ -178,9 +178,9 @@ class Sala {
         let cartasFromJD = undefined
         if(this.intercambiosRealizados.includes(jugadorDestino.id)) {
             cartasFromJD = this.mapa.get(jugadorDestino.id)
-            // Añadir las cartas al Destino
+            // Añadir las cartas al Origen
             jugadorEnvia.mano.push(...cartasFromJD);
-            // Borrar las cartas del Origen
+            // Borrar las cartas del Destino
             jugadorDestino.mano = jugadorDestino.mano.filter(carta => !cartasFromJD.includes(carta));
 
             // Añadir las cartas al Destino
