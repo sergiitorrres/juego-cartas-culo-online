@@ -23,7 +23,6 @@ class Sala {
 
         // ESTADO INTERCAMBIO
         this.intercambiosPendientes = []
-        this.intercambiosRealizados = []
         this.mapa = new Map()
         this.baraja = null
 
@@ -174,9 +173,9 @@ class Sala {
         // Recuperar objetos carta
         if (cartasAEnviar.length !== cantidad ) return {ok: false, error: 'No has entregado ' + cantidad + ' cartas' };
 
-        let interDone = false
-        let cartasFromJD = undefined
-        if(this.intercambiosRealizados.includes(jugadorDestino.id)) {
+        var interDone = false
+        var cartasFromJD = undefined
+        if(this.mapa.has(jugadorDestino.id)) {
             cartasFromJD = this.mapa.get(jugadorDestino.id)
             // Añadir las cartas al Origen
             jugadorEnvia.mano.push(...cartasFromJD);
@@ -193,14 +192,14 @@ class Sala {
             interDone = true;
             this.mapa.delete(jugadorDestino.id)
         } else {
-            this.mapa.set(jugadorEnvia.id, cartasAEnviar)
+            this.mapa.set(jugadorEnvia.id, [...cartasAEnviar])
         }
 
         this.intercambiosPendientes = this.intercambiosPendientes.filter(id => id !== clientId);
 
         return {
             ok: true,
-            inter: interDone,
+            interDone: interDone,
             jugador1: jugadorEnvia.id,
             cartasParaJ1: cartasFromJD,
             jugador2: jugadorDestino.id,

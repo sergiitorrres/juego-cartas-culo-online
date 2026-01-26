@@ -197,6 +197,13 @@
   text-transform: uppercase;
 }
 
+.boton_pasar:disabled {
+  background-color: #5d4037;
+  border-color: #3e2723;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
 .boton_lanzar {
   background-color: #27632a;
   color: #f1e7b0;

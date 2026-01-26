@@ -184,6 +184,12 @@ useEffect(() => {
       const from = data.from; // Para hacer animacion en el futuro
       const nuevasCartas = data.cartas
 
+      const idsCartasJugadas = []
+      nuevasCartas.forEach(c => {
+          idsCartasJugadas.push(c.id)
+      })
+
+      console.log("Me han donado: " + idsCartasJugadas);
       setMisCartas(prevCartas => {
         let newMano = [...prevCartas, ...nuevasCartas];
         newMano.sort((a, b) => b.fuerza - a.fuerza);
@@ -193,6 +199,7 @@ useEffect(() => {
 
     socket.on("fase_intercambio_finalizada", (data) => {
       setEstado(ESTADOS.JUGANDO);
+      setSeleccionadas([]);
     })
 
     
@@ -241,7 +248,6 @@ const sitios = ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der'];
   const handlerLanzarCarta = (indices) => {
     const setIndices = new Set(indices);
     const cartasLanzadas = misCartas.filter((_, idx) => setIndices.has(idx));
-    console.log("Cartas Lanzadas: " + cartasLanzadas)
     socket.emit("lanzar_cartas", {cartas: cartasLanzadas});
   }
 

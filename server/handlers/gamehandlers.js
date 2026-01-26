@@ -76,7 +76,12 @@ module.exports = (io, socket) => {
         mesa.setCantidad(cartasJugadas.length);
         mesa.setUltimoJugador(jugador);
         
-        jugador.mano = jugador.mano.filter(c => !cartasJugadas.includes(c));
+        const idsCartasJugadas = []
+        cartasJugadas.forEach(c => {
+            idsCartasJugadas.push(c.id)
+        })
+        
+        jugador.mano = jugador.mano.filter(c => !idsCartasJugadas.includes(c.id));
 
         // Avisar a todos
         io.to(salaId).emit("jugada_valida", { 
@@ -173,7 +178,9 @@ module.exports = (io, socket) => {
         if(!info.ok) {
             io.to(socket.id).emit("error", {mensaje: info.error})
             return;
-        } else if(info.interDone) {
+        }
+
+        if(info.interDone) {
             io.to(info.jugador1).emit("cartas_donadas", {cartas: info.cartasParaJ1, from: info.jugador2})
 
             io.to(info.jugador2).emit("cartas_donadas", {cartas: info.cartasParaJ2, from: info.jugador1})
@@ -183,6 +190,9 @@ module.exports = (io, socket) => {
             io.to(salaId).emit("fase_intercambio_finalizada", {});
             const idTurno = sala.jugadores[sala.turnoActual].id;
             io.to(salaId).emit("turno_jugador", { turno: idTurno });
+            // Por si acaso
+            sala.intercambiosPendientes = []
+            sala.mapa = new Map()
         }
     });
 }
