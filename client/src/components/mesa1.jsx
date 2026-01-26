@@ -235,8 +235,8 @@ useEffect(() => {
 
   // --- CÁLCULOS PARA EL RENDERIZADO ---
 // --- ESTO DEBE IR JUSTO ANTES DEL RETURN ---
-const totalConectados = rivales.length + 1;
-const maxCapacidad = numeroJugadores || 6;
+const totalConectados = rivales.length;
+const maxCapacidad = numMaxJugadores || 6;
 const huecosDisponibles = Math.max(0, maxCapacidad - totalConectados);
 // El array de sitios debe estar disponible para el mapeo
 const sitios = ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der'];
@@ -256,6 +256,10 @@ const sitios = ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der'];
   const handlercancelarSalida = () => {
     // El usuario dijo NO
     setMostrarModal(false); // Ocultamos modal y seguimos jugando
+  };
+
+  const handlerPulsarSalir = () => {
+    setMostrarModal(true); // Mostramos el modal de confirmación
   };
 
   const handlerIniciarPartida = () => {
@@ -298,6 +302,24 @@ const sitios = ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der'];
       data-fase="Lobby"
       data-jugadores="0" // Acuérdate de poner "data-"
     >
+      <button
+        className={styles.boton_pasar} 
+        type="button"
+        onClick={handlerPulsarSalir}
+        style={{
+            position: 'absolute',  
+            top: '20px',           
+            left: '20px',          
+            zIndex: 100,           
+            backgroundColor: '#c62828', 
+            color: 'white', 
+            borderColor: '#8e0000',
+            width: 'auto',         
+            padding: '10px 20px'   
+        }}
+      >
+        ⏏ SALIR
+      </button>
       
       {mostrarModal && (
         <div className={styles.modalOverlay}>
@@ -351,7 +373,7 @@ const sitios = ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der'];
         <div className={styles['pila-central']}>
           {estado === ESTADOS.LOBBY && (
             <div className={styles.contenedorLobby}>
-              <h3>Esperando jugadores ({jugadoresLista.length + 1}/{numMaxJugadores})</h3>
+              <h3>Esperando jugadores ({jugadoresLista.length}/{numMaxJugadores})</h3>
             <div className={styles.listaEspera}>
             <div className={styles.fichaEspera}>{playerName} (Tú)</div>
             {rivales.map(r => <div key={r.id} className={styles.fichaEspera}>{r.nombre}</div>)}

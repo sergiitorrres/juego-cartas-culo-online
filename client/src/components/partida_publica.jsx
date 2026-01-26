@@ -79,9 +79,9 @@ const PartidaPublica = ({ socket, playerName, setMaxJugadores}) => {
     });
   }
 
-  const handleUnirsePartida = (salaIdSeleccionada) => {
+  const handleUnirsePartida = (salaIdSeleccionada, maxJ) => {
     if (!salaIdSeleccionada) return;
-
+    setMaxJugadores(maxJ);
     console.log("Uniendose a sala existente:", salaIdSeleccionada)
 
     socket.emit('unirse_sala', { 
@@ -127,7 +127,7 @@ const PartidaPublica = ({ socket, playerName, setMaxJugadores}) => {
                     </div>
                     <button 
                       className={styles.botonUnirse}
-                      onClick={() => handleUnirsePartida(sala.id)} 
+                      onClick={() => handleUnirsePartida(sala.id, sala.maxJugadores)} 
                       disabled={sala.jugadores.length >= sala.max}
                     >
                       {sala.jugadores.length >= sala.max ? 'LLENA' : 'UNIRSE'}
