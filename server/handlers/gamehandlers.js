@@ -34,7 +34,7 @@ module.exports = (io, socket) => {
     });
 
     socket.on("lanzar_cartas", (data, callback) => {
-        const {indices} = data
+        const cartasJugadas = data.cartas
         const salaId = socket.data.salaId;
         const sala = rooms[salaId]
 
@@ -49,7 +49,6 @@ module.exports = (io, socket) => {
             return socket.emit("error", { mensaje: "Has pasado turno, debes esperar a que se limpie la mesa" });
         }
 
-        const cartasJugadas = indices.map(i => jugador.mano[i]).filter(c => c);
         if (cartasJugadas.length === 0) return;
 
         const esDosDeOros = (cartasJugadas.length === 1 && cartasJugadas[0].palo === 'oros' && cartasJugadas[0].valor === 2);
@@ -70,14 +69,19 @@ module.exports = (io, socket) => {
             return socket.emit("error", { mensaje: "Las cartas deben ser del mismo valor" });
         }
         
-        const plin = (!limpiaMesa && mesa.cartasEnMesa.length > 0 && mesa.fuerzaActual === f);
+        let plin = (!limpiaMesa && mesa.cartasEnMesa.length > 0 && mesa.fuerzaActual === f);
         
         mesa.setFuerzaActual(f);
         mesa.setCartas(cartasJugadas);
         mesa.setCantidad(cartasJugadas.length);
         mesa.setUltimoJugador(jugador);
         
-        jugador.mano = jugador.mano.filter(c => !cartasJugadas.includes(c));
+        const idsCartasJugadas = []
+        cartasJugadas.forEach(c => {
+            idsCartasJugadas.push(c.id)
+        })
+        
+        jugador.mano = jugador.mano.filter(c => !idsCartasJugadas.includes(c.id));
 
         // Avisar a todos
         io.to(salaId).emit("jugada_valida", { 
@@ -108,6 +112,7 @@ module.exports = (io, socket) => {
         if (limpiaMesa) {
             mesa.reset();
             sala.jugadoresResetPass();
+            plin = false;
             io.to(salaId).emit("mesa_limpia", { motivo: esDosDeOros ? "2 de Oros" : "Jugador terminó" });
             
             // Si tiro 2 de oros y sigue jugando, repite turno
@@ -158,21 +163,37 @@ module.exports = (io, socket) => {
     });
 
     socket.on("dar_cartas", (data, callback) => {
-        const indices = data.indices
+        const cartas = data.cartas
         const salaId = socket.data.salaId
         const sala = rooms[salaId]
-        
-        const info = sala.realizarIntercambio(socket.id, indices)
-        if(!info.ok) {
-            io.to(socket.id).emit("error", {mensaje: info.error})
+
+        //console.log("salaId:", socket.data.salaId);
+        //console.log("rooms keys:", Object.keys(rooms));
+
+        if (!sala) {
+            socket.emit("error", { error: "Sala no encontrada o no válida" });
+            return;
         }
         
-        io.to(info.destinatarioId).emit("cartas_donadas", {from: socket.id, cartas: info.nuevasCartas})
+        const info = sala.realizarIntercambio(socket.id, cartas)
+        if(!info.ok) {
+            io.to(socket.id).emit("intercambio_incorrecto", {cartas: cartas})
+            return;
+        }
+
+        if(info.interDone) {
+            io.to(info.jugador1).emit("cartas_donadas", {cartas: info.cartasParaJ1, from: info.jugador2})
+
+            io.to(info.jugador2).emit("cartas_donadas", {cartas: info.cartasParaJ2, from: info.jugador1})
+        }
 
         if(info.faseTerminada) {
             io.to(salaId).emit("fase_intercambio_finalizada", {});
             const idTurno = sala.jugadores[sala.turnoActual].id;
             io.to(salaId).emit("turno_jugador", { turno: idTurno });
+            // Por si acaso
+            sala.intercambiosPendientes = []
+            sala.mapa = new Map()
         }
     });
 }

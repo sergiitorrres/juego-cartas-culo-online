@@ -34,6 +34,7 @@ const Inicio = ({ playerName, setPlayerName }) => {
           className={styles.inputNombre}
           value={playerName}
           onChange={(e) => setPlayerName(e.target.value)}
+          maxlength="12"
         />
         
         <div className={styles.botonesContainer}>

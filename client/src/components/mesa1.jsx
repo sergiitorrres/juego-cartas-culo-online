@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ESTADOS, ROLES } from '../constantes';
 
-const Mesa = ({playerName, socket}) => {
+const Mesa = ({playerName, socket, numMaxJugadores}) => {
   const navigate = useNavigate();
   const [misCartas,setMisCartas] = useState([]);
   const [rivales,setRivales] = useState([]);
@@ -14,6 +14,9 @@ const Mesa = ({playerName, socket}) => {
   const [miRol, setMiRol] = useState();
   const [seleccionadas, setSeleccionadas] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [jugadoresLista,setJugadoresLista] = useState([]);
+  const [numeroJugadores,setNumeroJugadores] = useState()
+  const [ultimoJugadorId, setUltimoJugadorId] = useState(null);
 
 useEffect(() => {
     
@@ -32,28 +35,42 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
-    //if (!playerName) navigate('/');
+    if (!playerName) navigate('/');
     if (!socket) return;
+
+    socket.on("jugador_unido" , (data) => {
+      setJugadoresLista(data.jugadores);
+      setNumeroJugadores(jugadoresLista.length + 1);
+    })
 
     socket.on("ronda_iniciada",(data) =>{
       setMisCartas(data.misCartas);
-      setRivales(data.jugadores.filter(j => j.id !== socket.id));
+      setUltimoJugadorId(null);
+      let riv = [];
+      let miPosicion = 0;
+      for(miPosicion; miPosicion < data.jugadores.length; miPosicion++){
+        if (data.jugadores[miPosicion].id === socket.id){
+          break;
+        }
+      }
+      let p;
+      for(p = miPosicion + 1; p < data.jugadores.length; p++) {
+        riv.push(data.jugadores[p])
+      }
+      for(p = 0; p < miPosicion; p++) {
+        riv.push(data.jugadores[p])
+      }
+      setRivales(riv);
       setEstado(ESTADOS.JUGANDO);
     })
 
-    socket.on("jugador_paso_notif",(data) =>{
-      //MODIFICAR PARA QUE SE VEA CUANDO PASA
-      if(data.jugadorId !== socket.id) { // FALTA CSS
-        setRivales(prevRiv => {
-          prevRiv.forEach(rival => {
-            if(rival === data.jugadorId) {
-              rival.haPasado = true;
-            }
-          })
-          return prevRiv;
-        });
-      }
-    })
+    socket.on("jugador_paso_notif", (data) => {
+        return setRivales(prevRiv => 
+          prevRiv.map(rival => 
+            rival.id === data.jugadorId ? { ...rival, haPasado: true } : rival
+        )
+        );
+      });
 
     socket.on("turno_jugador",(data) =>{
       setTurno(data.turno);
@@ -67,11 +84,18 @@ useEffect(() => {
     
     socket.on("jugada_valida", (data) => {
       setCartaMesa(data.cartas);
+      setUltimoJugadorId(data.jugadorId)
       if(data.jugadorId === socket.id) {
         setMisCartas(prevCartas => {
           return prevCartas.filter(c => !data.cartas.find(dc => dc.id === c.id));
         });
         setSeleccionadas([]);
+      }else{
+        setRivales(prevRivales => 
+          prevRivales.map(r =>
+            r.id === data.jugadorId ? { ...r, numCartas: r.numCartas - data.cartas.length } : r
+          )
+        );
       }
     })
   
@@ -84,28 +108,29 @@ useEffect(() => {
     });
 
     socket.on("fin_ronda", (data) => {
-      const ranking = data.ranking;
-      const roles = [ROLES.PRESIDENTE, ROLES.VICE_PRESIDENTE, ROLES.VICE_CULO, ROLES.CULO];
-      let flag = false;
+      const roles = [
+        ROLES.PRESIDENTE,
+        ROLES.VICE_PRESIDENTE,
+        ROLES.VICE_CULO,
+        ROLES.CULO
+      ];
 
-      for(let i = 0; i < ranking.length; i++) {
-        // El servidor envía: { jugadorId, posicion }
-        setRivales((prevRivales) => 
-          prevRivales.map((rival) =>
-          // Si el ID coincide, actualizamos su posición
-          rival.id === ranking[i].jugadorId ? { ...rival, rol: roles[i] } : rival // Si no coincide, devolvemos el rival sin cambios
+      let miRolNuevo = ROLES.NEUTRO;
+
+      data.ranking.forEach(entry => {
+        setRivales(prev =>
+          prev.map(r =>
+            r.id === entry.jugadorId ? { ...r, rol: entry.rol } : r
           )
         );
-        
-        if(ranking[i].id === socket.id) {
-          setMiRol(roles[i]);
-          flag = true;
-        }
-      }
 
-      if(!flag) {
-        setMiRol(ROLES.NEUTRO);
-      }
+        if (entry.jugadorId === socket.id) {
+          miRolNuevo = entry.rol;
+        }
+      });
+
+      setMiRol(miRolNuevo);
+
 
       setTimeout(() => {
         setCartaMesa([]);
@@ -119,6 +144,7 @@ useEffect(() => {
       const motivo = data.motivo; // Probablemente no necesario
       setTimeout(() => {
         setCartaMesa([]);
+        setUltimoJugadorId(null);
       }, 2000);
 
       // Reset Ha Pasado
@@ -138,27 +164,43 @@ useEffect(() => {
       if(forzado) {
         setTimeout(() => {
           setMisCartas(prevCartas => {
-          const cartasDonadas = prevCartas.slice(0, cant);
+            let cartasDonadas = [];
 
-          const indices = cartasDonadas.map(c =>
-            prevCartas.findIndex(pc => pc.id === c.id)
-          );
+            const indexOros2 = prevCartas.findIndex(c => c.id === "oros_2");
 
-          socket.emit("dar_cartas", { indices });
+            if (indexOros2 !== -1) {
+              const oros2 = prevCartas[indexOros2];
+              cartasDonadas.push(oros2);
 
-          return prevCartas.filter(c => !cartasDonadas.includes(c));
+              if (cant === 2) {
+                const mejorRestante = prevCartas.find(c => c.id !== "oros_2");
+                if (mejorRestante) {
+                  cartasDonadas.push(mejorRestante);
+                }
+              }
+            } else {
+              cartasDonadas = prevCartas.slice(0, cant);
+            }
+
+            socket.emit("dar_cartas", { cartas: cartasDonadas });
+
+            return prevCartas.filter(c => !cartasDonadas.includes(c));
           });
+
         }, 5000);
-      } else {
-        // MODIFICAR Y AÑADIR POP UP??
-        // Gestionar seleccion de cartas a donar !!!
       }
     })
 
     socket.on("cartas_donadas", (data) => {
       const from = data.from; // Para hacer animacion en el futuro
-      const nuevasCartas = data.cartas;
+      const nuevasCartas = data.cartas
 
+      const idsCartasJugadas = []
+      nuevasCartas.forEach(c => {
+          idsCartasJugadas.push(c.id)
+      })
+
+      console.log("Me han donado: " + idsCartasJugadas);
       setMisCartas(prevCartas => {
         let newMano = [...prevCartas, ...nuevasCartas];
         newMano.sort((a, b) => b.fuerza - a.fuerza);
@@ -166,18 +208,38 @@ useEffect(() => {
       });
     })
 
+    socket.on("intercambio_incorrecto", (data) => {
+      const cartasPerdidas = data.cartas;
+      setMisCartas(prevCartas => {
+        let mano = [...prevCartas, ...cartasPerdidas];
+        mano = mano.sort((a, b) => b.fuerza - a.fuerza);
+        return mano;
+      })
+    })
+
     socket.on("fase_intercambio_finalizada", (data) => {
       setEstado(ESTADOS.JUGANDO);
+      setSeleccionadas([]);
     })
+
+    
     
     // ***********************************
     //  ======= CIERRE DE SOCKETS =======
     // ***********************************
     return () => { socket.off("ronda_iniciada") ;socket.off( "jugador_paso_notif"); socket.off("turno_jugador"); socket.off("error"); socket.off("jugada_valida");
       socket.off("jugador_termino"); socket.off("fin_ronda"); socket.off("fase_intercambio"); socket.off("pedir_cartas"); socket.off("dar_cartas"); 
-      socket.off("cartas_donadas"); socket.off("fase_intercambio_finalizada"); socket.off("mesa_limpia")
+      socket.off("cartas_donadas"); socket.off("fase_intercambio_finalizada"); socket.off("mesa_limpia"); socket.off("jugador_unido"); socket.off("intercambio_incorrecto")
     }
   }, [playerName, navigate, socket]);
+
+  // --- CÁLCULOS PARA EL RENDERIZADO ---
+// --- ESTO DEBE IR JUSTO ANTES DEL RETURN ---
+const totalConectados = rivales.length;
+const maxCapacidad = numMaxJugadores || 6;
+const huecosDisponibles = Math.max(0, maxCapacidad - totalConectados);
+// El array de sitios debe estar disponible para el mapeo
+const sitios = ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der'];
 
   const resetHaPasado = () => {
     setRivales(prevRiv => prevRiv.map(rival => ({ ...rival, haPasado: false }))
@@ -196,6 +258,10 @@ useEffect(() => {
     setMostrarModal(false); // Ocultamos modal y seguimos jugando
   };
 
+  const handlerPulsarSalir = () => {
+    setMostrarModal(true); // Mostramos el modal de confirmación
+  };
+
   const handlerIniciarPartida = () => {
     socket.emit("iniciar_partida",{});
   }
@@ -204,7 +270,9 @@ useEffect(() => {
   }
 
   const handlerLanzarCarta = (indices) => {
-    socket.emit("lanzar_cartas", {indices: indices});
+    const setIndices = new Set(indices);
+    const cartasLanzadas = misCartas.filter((_, idx) => setIndices.has(idx));
+    socket.emit("lanzar_cartas", {cartas: cartasLanzadas});
   }
 
   const toggleSelection = (index) =>{
@@ -221,8 +289,9 @@ useEffect(() => {
       const setIndices = new Set(indices);
 
       const restantes = prevCartas.filter((_, idx) => !setIndices.has(idx));
+      const cartas_donadas = prevCartas.filter((_, idx) => setIndices.has(idx));
 
-      socket.emit("dar_cartas", { indices });
+      socket.emit("dar_cartas", { cartas: cartas_donadas });
       return restantes;
     });
   };
@@ -233,6 +302,24 @@ useEffect(() => {
       data-fase="Lobby"
       data-jugadores="0" // Acuérdate de poner "data-"
     >
+      <button
+        className={styles.boton_pasar} 
+        type="button"
+        onClick={handlerPulsarSalir}
+        style={{
+            position: 'absolute',  
+            top: '20px',           
+            left: '20px',          
+            zIndex: 100,           
+            backgroundColor: '#c62828', 
+            color: 'white', 
+            borderColor: '#8e0000',
+            width: 'auto',         
+            padding: '10px 20px'   
+        }}
+      >
+        ⏏ SALIR
+      </button>
       
       {mostrarModal && (
         <div className={styles.modalOverlay}>
@@ -249,37 +336,54 @@ useEffect(() => {
       )}
 
       {/* --- ZONA 1: OPONENTES (ARRIBA) --- */}
-      <div className={styles['opponents-row']}>
-       {rivales.map((rival,posicion_pantalla) => (
-        <div key= {rival.id} className={styles.jugador_rival}>
-          <span className={styles.nombre_rival}> {rival.nombre} </span>
-          <span> {rival.numCartas} </span>
-          <img alt={rival.rol} src= 'PONER AQUI LA URL DE LA FOTO DEL ROL'/>
-          <img alt="avatar" className={styles.avatar} src="foto_avatar" />
+{rivales.map((rival, index) => {
+  const esSuTurno = rival.id === turno;
+  const hizoUltimaJugada = rival.id === ultimoJugadorId;
+  return (<div 
+    key={rival.id} 
+    className={`${styles.jugador_rival} ${styles[sitios[index]]} ${rival.haPasado ? styles.haPasado : ''} ${esSuTurno ? styles.borde_turno_verde : ''} ${hizoUltimaJugada ? styles.brillo_ultima_jugada : ''}`}
+  >
+    <span className={styles.nombre_rival}>{rival.nombre}</span>
+    
+    {/* AVATAR PEQUEÑO (FIJADO POR CSS) */}
+    <img alt="avatar" className={styles.avatar} src="/assets/images/avatar-de-usuario.png" />
+    
+    {/* BARRA DE TIEMPO RIVAL */}
+    <div className={styles['timer-container']}>
+      <div 
+        className={styles['timer-bar']}
+        style={{ 
+          width: rival.id === turno ? '100%' : '0%', 
+          transition: rival.id === turno ? 'width 15s linear' : 'none' 
+        }}
+      ></div>
+    </div>
 
-          {rival.posicionFinal > 0 ?
-          (<span className={styles.victoria}> Termino en posicion {rival.posicionFinal}</span>):
-          (<div className={styles.contadorDeCartas}>
-            <img alt= '' src='INSERTAR AQUI URL QUE PONGAMOS PARA ICNONO DEL'/>
-            <span> {rival.numCartas} </span>
-          </div>)
-          }
-          {rival.id === turno &&
-            <span className={styles.pensando}> ◀◀ Pensando </span>
-          }
-        </div>
+    <div className={styles.contadorDeCartas}>
+       <span>{rival.numCartas} 🎴</span>
+    </div>
+  </div>
+)})}
 
-       )
       
-        
-      )}
-
-      </div> 
 
 
       {/* --- ZONA 2: CENTRO DE LA MESA --- */}
       <div className={styles['table-center']}>
         <div className={styles['pila-central']}>
+          {estado === ESTADOS.LOBBY && (
+            <div className={styles.contenedorLobby}>
+              <h3>Esperando jugadores ({jugadoresLista.length}/{numMaxJugadores})</h3>
+            <div className={styles.listaEspera}>
+            <div className={styles.fichaEspera}>{playerName} (Tú)</div>
+            {rivales.map(r => <div key={r.id} className={styles.fichaEspera}>{r.nombre}</div>)}
+                {/* Pintamos los huecos vacíos */}
+            {[...Array(huecosDisponibles)].map((_, i) => (
+        <div key={i} className={styles.fichaHueco}>Esperando...</div>
+      ))}
+    </div>
+  </div>
+)}
           {cartasMesa.map((carta,index) =>(
             <img key={index} alt = {carta.id} src={`/assets/images/cartas/${carta.id}.png`}/>
           ))}
@@ -309,7 +413,11 @@ useEffect(() => {
 
 
       {/* --- ZONA 3: TÚ (ABAJO) - LO QUE TE FALTABA --- */}
-      <div className={styles.zona_jugador}>
+      <div className={`
+      ${styles.zona_jugador} 
+      ${socket?.id === turno ? styles.fondo_turno_activo : ''} {/* <-- NUEVA CLASE DE FONDO */}
+      ${socket?.id === ultimoJugadorId ? styles.brillo_ultima_jugada : ''}
+      `}>
          <div className={styles.mi_mano}>
           {misCartas.map((carta,posicion) =>
           <button
@@ -332,18 +440,16 @@ useEffect(() => {
          </div>
           <button onClick = {() => handlerLanzarCarta(seleccionadas)}
             disabled ={turno !== socket?.id || seleccionadas.length === 0} 
-            className={`${styles.boton_lanzar} ${seleccionadas.length > 0 ? styles.brillante : ''}`}
+            className={`${styles.boton_lanzar} ${seleccionadas.length > 0 ? styles.brillante : ''} ${turno === socket?.id ? styles.boton_turno_activo : ''}`}
           >    
           Lanzar
           </button>
           
-          {estado === ESTADOS.INTERCAMBIANDO &&
-            (miRol === ROLES.VICE_PRESIDENTE || miRol === ROLES.PRESIDENTE) && (
+          {estado === ESTADOS.INTERCAMBIO &&(
               <button
                 onClick={() => handlerDarCartas(seleccionadas)}
-                disabled={turno !== socket?.id}
                 className={styles.boton_dar_cartas}
-              >
+                disabled = {![ROLES.PRESIDENTE, ROLES.VICE_PRESIDENTE].includes(miRol)}>
                 Dar cartas
               </button>
           )}
@@ -354,6 +460,15 @@ useEffect(() => {
             <img alt="icono rol" src="/assets/images/culo_rol.png" />
             <span>{playerName} ({miRol || 'Sin Rol'})</span>
          </div>
+         <div className={styles['timer-container']}>
+          <div 
+            className={styles['timer-bar']}
+            style={{ 
+            width: socket?.id === turno ? '100%' : '0%', // Comprueba si es tu turno
+            transition: socket?.id === turno ? 'width 15s linear' : 'none' 
+          }}
+          ></div>
+            </div>
       </div>
 
     </div> 

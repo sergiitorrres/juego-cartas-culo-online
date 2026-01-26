@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import styles from './crear_privada.module.css';
 
-const CrearPrivada = ({ socket, playerName}) => {
+const CrearPrivada = ({ socket, playerName, setMaxJugadores}) => {
   const navigate = useNavigate();
 
   useEffect(() => { // Comprueba que hay nombre
@@ -13,7 +13,6 @@ const CrearPrivada = ({ socket, playerName}) => {
   const [salaCrearId, setSalaCrearId] = useState('');
   const [selectedConfig, setSelectedConfig] = useState(0);
   const [salaUnirseId, setSalaUnirseId] = useState('');
-
   const configuraciones = [
     {id: 0, maxJugadores: 4, baraja48: false, label: '4 personas. - 40 Cartas'},
     {id: 1, maxJugadores: 4, baraja48: true, label: '4 personas. - 48 Cartas'},
@@ -54,6 +53,7 @@ const CrearPrivada = ({ socket, playerName}) => {
 
     const config = configuraciones[selectedConfig]
 
+    setMaxJugadores(config.maxJugadores);
     console.log("Creando sala:", salaCrearId, config)
 
     socket.emit('crear_sala', { 

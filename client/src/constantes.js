@@ -14,3 +14,11 @@ export const ESTADOS = {
     JUGANDO: 'JUGANDO',
     RESUMEN: 'RESUMEN'
 };
+
+export const sitios = {
+    IZQ : 'IZQ',
+    ARRIBAIZQ : 'ARRIBAIZQ',
+    ARRIBACENTRO : 'ARRIBACENTRO',
+    ARRIBADERECHA : 'ARRIBADERECHA',
+    DER : 'DER'
+}

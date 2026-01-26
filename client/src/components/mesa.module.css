@@ -2,10 +2,14 @@
 .game-table {
   width: 100vw;
   height: 100vh;
-  background-image: url('/assets/images/Board.webp'); /* Ruta absoluta para Docker */
+  background-image: url('/assets/images/Board.webp');
   background-color: #2c3e50;
-  background-size: cover;
+  
+  /* CAMBIO CLAVE: La imagen ahora siempre cubrirá el fondo sin deformarse */
+  background-size: cover; 
+  background-repeat: no-repeat;
   background-position: center;
+
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -13,28 +17,31 @@
   overflow: hidden;
   position: relative;
   box-sizing: border-box;
+  padding: 10px 10px 0px 10px;
 }
 
 /* --- 2. ZONA OPONENTES (ARRIBA) --- */
 .opponents-row {
-  display: flex;
+  display: contents;
   justify-content: center;
   gap: 15px;
   height: 160px;
 }
 
 .jugador_rival {
+  position: absolute; /* Clave para que se muevan por la mesa */
   background-color: #f1e7b0;
   border: 3px solid #5d4037;
   border-radius: 12px;
   padding: 8px;
-  width: 110px;
+  width: 115px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-  position: relative;
+  z-index: 10;
+  transition: all 0.4s ease-in-out;
 }
 
 .nombre_rival {
@@ -48,8 +55,8 @@
   width: 45px !important;
   height: 45px !important;
   border-radius: 50%;
-  object-fit: cover;
   border: 2px solid #5d4037;
+  margin: 5px 0;
 }
 
 .pensando {
@@ -64,45 +71,83 @@
 /* --- 3. ZONA CENTRAL (MESA Y BOTONES) --- */
 .table-center {
   flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  width: 100%;
   position: relative;
+  /* Esto asegura que el centro no se pegue al borde superior */
+  margin-top: 20px; 
+  margin-bottom: 20px;
 }
 
 .pila-central {
-  position: relative;
-  width: 250px;
-  height: 180px;
+  position: absolute;
+  /* Centramos respecto al contenedor .table-center */
+  top: 65%; 
+  left: 50%;
+  transform: translate(-50%, -50%);
+  
+  /* Tamaño fijo del contenedor para que las cartas no bailen */
+  width: 300px;
+  height: 200px;
+  
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 5;
+  pointer-events: none; /* Para que no bloquee clicks si algo pasa por debajo */
 }
 
 .pila-central img {
   position: absolute;
-  width: 100px;
+  width: 110px; 
+  height: auto;
   border: 2px solid white;
   border-radius: 8px;
-  box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
-  transition: transform 0.3s ease;
+  box-shadow: 2px 4px 10px rgba(0,0,0,0.5);
+  transition: all 0.3s ease-out; /* Animación suave al aparecer */
 }
 
 /* Efecto abanico para ver si es pareja o trío */
-.pila-central img:nth-child(1) { transform: translateX(-30px) rotate(-5deg); }
-.pila-central img:nth-child(2) { transform: translateX(0px) rotate(2deg); }
-.pila-central img:nth-child(3) { transform: translateX(30px) rotate(-3deg); }
-.pila-central img:nth-child(4) { transform: translateX(50px) rotate(6deg); }
+.pila-central img:nth-child(1)  { transform: rotate(-12deg) translate(-10px, 5px); }
+.pila-central img:nth-child(2)  { transform: rotate(8deg)  translate(12px, -8px); }
+.pila-central img:nth-child(3)  { transform: rotate(-4deg) translate(-5px, 12px); }
+.pila-central img:nth-child(4)  { transform: rotate(15deg) translate(18px, 4px); }
+.pila-central img:nth-child(5)  { transform: rotate(-9deg) translate(-15px, -10px); }
+.pila-central img:nth-child(6)  { transform: rotate(3deg)  translate(2px, 15px); }
+.pila-central img:nth-child(7)  { transform: rotate(-18deg) translate(-20px, 2px); }
+.pila-central img:nth-child(8)  { transform: rotate(11deg) translate(10px, -15px); }
+.pila-central img:nth-child(9)  { transform: rotate(-2deg) translate(-4px, -20px); }
+.pila-central img:nth-child(10) { transform: rotate(20deg) translate(25px, 10px); }
 
+.pila-central img:last-child {
+  z-index: 20;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.4), 2px 4px 12px rgba(0,0,0,0.6);
+}
+@keyframes tirarCarta {
+  from {
+    opacity: 0;
+    transform: translateY(200px) scale(1.5) rotate(0deg);
+  }
+  to {
+    opacity: 1;
+    /* El transform final lo sobreescribirá el nth-child de arriba */
+  }
+}
+
+.pila-central img:last-child {
+  animation: tirarCarta 0.4s ease-out forwards;
+}
 .controles_centro {
-  margin-top: 25px;
+  position: absolute;
+  bottom: 0px;        /* Lo pega al borde inferior de la zona central */
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  justify-content: center; /* ESTO centra los botones automáticamente */
+  justify-content: center;
   align-items: center;
-  gap: 20px;
   width: 100%;
-  min-height: 50px; /* Evita que la mesa "salte" cuando desaparece el botón */
+  z-index: 10;        /* Para que esté por encima de cualquier otra cosa */
+  min-height: auto;   /* Quitamos el min-height para que no ocupe espacio extra */
+  margin-top: 0;      /* Eliminamos el margen que movía las cartas */
 }
 
 /* --- 4. ZONA JUGADOR (ABAJO) --- */
@@ -110,34 +155,35 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding-bottom: 10px;
+  padding-bottom: 0px; /* Pegado al borde inferior */
+  margin-bottom: -5px; /* Un pequeño empujón extra hacia abajo si hace falta */
 }
 
 .mi_mano {
+  margin-bottom: -10px; /* Un margen negativo acerca las cartas al botón */
   display: flex;
   justify-content: center;
-  gap: -35px; /* Solapamiento de cartas */
-  margin-bottom: 5px;
+  height: 180px;
+  align-items: flex-end;
 }
 
 .carta {
+  margin-left: -40px; /* Solapamiento fijo */
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
-  transition: transform 0.2s;
 }
 
 .carta img {
-  width: 105px;
+  height: 150px;
+  width: auto;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+  transition: transform 0.2s;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
 }
 
-.seleccionada {
-  transform: translateY(-30px);
-}
+.seleccionada { transform: translateY(-30px); }
 
 /* --- 5. BOTONES Y ESTILOS --- */
 .botonInicioPartida, .boton_pasar {
@@ -151,16 +197,25 @@
   text-transform: uppercase;
 }
 
+.boton_pasar:disabled {
+  background-color: #5d4037;
+  border-color: #3e2723;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
 .boton_lanzar {
   background-color: #27632a;
   color: #f1e7b0;
-  border: 2px solid #1b471d;
-  padding: 10px 35px;
-  border-radius: 8px;
+  padding: 12px 40px;
+  border-radius: 10px;
   font-weight: 800;
   text-transform: uppercase;
+  border: 3px solid #1b471d;
+  box-shadow: 0 6px 0 #1b471d;
   cursor: pointer;
-  box-shadow: 0 4px 0 #1b471d;
+  margin-bottom: 2px;
+  transform: scale(0.9);
 }
 
 .boton_lanzar:disabled {
@@ -170,9 +225,7 @@
   opacity: 0.6;
 }
 
-.brillante {
-  animation: pulso 1.5s infinite;
-}
+.brillante { animation: pulsoVerde 1.5s infinite; }
 
 .boton_dar_cartas {
   background-color: #1f4f7a;      /* Azul oscuro (distinto pero coherente) */
@@ -201,10 +254,9 @@
   cursor: not-allowed;
 }
 
-
-@keyframes pulso {
+@keyframes pulsoVerde {
   0% { box-shadow: 0 0 0 0 rgba(39, 99, 42, 0.7); }
-  70% { box-shadow: 0 0 0 10px rgba(39, 99, 42, 0); }
+  70% { box-shadow: 0 0 0 15px rgba(39, 99, 42, 0); }
   100% { box-shadow: 0 0 0 0 rgba(39, 99, 42, 0); }
 }
 
@@ -231,16 +283,10 @@
 
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.85); /* Fondo oscuro */
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85);
+  display: flex; justify-content: center; align-items: center;
   z-index: 9999;
-  backdrop-filter: blur(3px);
 }
 
 .modalCaja {
@@ -309,4 +355,139 @@
 
 .btnNo:hover {
   background-color: #2ecc71;
+}
+/* Modifica estos valores en tu sección de posicionamiento */
+.izq { top: 50%; left: 5%; transform: translateY(-50%); }
+.der { top: 50%; right: 5%; transform: translateY(-50%); }
+
+.arriba-izq { top: 10%; left: 20%; }
+.arriba-centro { top: 5%; left: 50%; transform: translateX(-50%); }
+.arriba-der { top: 10%; right: 20%; }
+/* --- BARRA DE TIEMPO --- */
+.timer-container {
+  width: 90%;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  margin: 5px auto;
+  overflow: hidden;
+}
+
+.timer-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50, #8bc34a);
+  border-radius: 3px;
+}
+/* --- LOBBY Y LISTA DE ESPERA --- */
+.contenedorLobby {
+  background-color: rgba(241, 231, 176, 0.95);
+  border: 3px solid #5d4037;
+  border-radius: 15px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+  z-index: 1000;
+  min-width: 320px;
+}
+
+.listaEspera {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.fichaEspera, .fichaHueco {
+  padding: 8px 15px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  border: 2px solid #5d4037;
+}
+
+.fichaEspera { background: #5d4037; color: #f1e7b0; padding: 5px 12px; border-radius: 6px; font-weight: bold; }
+.fichaHueco { border: 2px dashed #5d4037; padding: 5px 12px; border-radius: 6px; opacity: 0.5; }
+/* Estado cuando un jugador ha pasado el turno */
+.jugador_rival.haPasado {
+  opacity: 0.7;
+  filter: grayscale(0.5);
+}
+
+.haPasado::after {
+  content: "PASO";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-15deg);
+  background: #c0392b;
+  color: white;
+  padding: 2px 10px;
+  font-weight: 900;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+/* Mejora para que las cartas de la mano se vean mejor */
+.mi_mano .carta img:hover {
+  transform: translateY(-25px) scale(1.1);
+  z-index: 100;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+}
+.carta:first-child {
+  margin-left: 0; /* La primera carta no se solapa con nada a la izquierda */
+}
+.borde_turno_verde {
+  border: 4px solid #2ecc71 !important;
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+}
+
+.brillo_ultima_jugada {
+  box-shadow: 0 0 20px 5px rgba(255, 215, 0, 0.8) !important;
+  animation: pulsoDorado 1.5s infinite alternate;
+}
+
+/* --- NUEVOS ESTILOS PARA TU TURNO --- */
+
+/* 1. Fondo sutil verde para toda tu zona */
+.fondo_turno_activo {
+  /* Un verde esmeralda muy transparente */
+  background-color: rgba(46, 204, 113, 0.15);
+  /* Redondeamos un poco las esquinas para que quede más moderno */
+  border-radius: 15px;
+  /* Transición suave para que no sea un cambio brusco */
+  transition: background-color 0.5s ease, border-radius 0.5s ease;
+  /* Un padding extra para que el fondo respire alrededor de tus elementos */
+  padding: 10px; 
+  /* Compensamos el padding con margen negativo para no mover la estructura */
+  margin: -10px;
+}
+
+/* 2. El botón 'Lanzar' palpita para llamar la atención */
+.boton_turno_activo {
+  /* Solo aplicamos el efecto si el botón NO está deshabilitado */
+  &:not(:disabled) {
+    /* Hacemos que el botón sea de un verde más vivo */
+    background-color: #2ecc71 !important;
+    color: white !important;
+    font-weight: bold;
+    /* Y le añadimos una animación de pulso */
+    animation: pulsoBotonVerde 1.5s infinite;
+  }
+}
+
+/* Definición de la animación de pulso para el botón */
+@keyframes pulsoBotonVerde {
+  0% {
+    /* Empieza sin sombra extra */
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+  }
+  70% {
+    /* Se expande un anillo de luz verde */
+    box-shadow: 0 0 0 15px rgba(46, 204, 113, 0);
+  }
+  100% {
+    /* Vuelve al estado inicial */
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+  }
 }
