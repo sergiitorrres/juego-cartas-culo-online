@@ -69,7 +69,7 @@ module.exports = (io, socket) => {
             return socket.emit("error", { mensaje: "Las cartas deben ser del mismo valor" });
         }
         
-        const plin = (!limpiaMesa && mesa.cartasEnMesa.length > 0 && mesa.fuerzaActual === f);
+        let plin = (!limpiaMesa && mesa.cartasEnMesa.length > 0 && mesa.fuerzaActual === f);
         
         mesa.setFuerzaActual(f);
         mesa.setCartas(cartasJugadas);
@@ -112,6 +112,7 @@ module.exports = (io, socket) => {
         if (limpiaMesa) {
             mesa.reset();
             sala.jugadoresResetPass();
+            plin = false;
             io.to(salaId).emit("mesa_limpia", { motivo: esDosDeOros ? "2 de Oros" : "Jugador terminó" });
             
             // Si tiro 2 de oros y sigue jugando, repite turno
@@ -176,7 +177,7 @@ module.exports = (io, socket) => {
         
         const info = sala.realizarIntercambio(socket.id, cartas)
         if(!info.ok) {
-            io.to(socket.id).emit("error", {mensaje: info.error})
+            io.to(socket.id).emit("intercambio_incorrecto", {cartas: cartas})
             return;
         }
 

@@ -150,9 +150,9 @@ class Sala {
 
     realizarIntercambio(clientId, cartasAEnviar) {
         if (this.estado !== constantes.ESTADOS.INTERCAMBIO) return {ok: false, error: 'No es fase de intercambio' };
-        /*if (!this.intercambiosPendientes.includes(clientId)) {
+        if (!this.intercambiosPendientes.includes(clientId)) {
             return { ok: false, error: 'No tienes intercambios pendientes' };
-        }*/
+        }
 
         const jugadorEnvia = this.jugadores.find(j => j.id === clientId);
         if (!jugadorEnvia) return { ok: false, error: 'Jugador no encontrado' };
@@ -180,12 +180,23 @@ class Sala {
             // Añadir las cartas al Origen
             jugadorEnvia.mano.push(...cartasFromJD);
             // Borrar las cartas del Destino
-            jugadorDestino.mano = jugadorDestino.mano.filter(carta => !cartasFromJD.includes(carta));
-
+            const idsCartasJD = []
+            cartasFromJD.forEach(c => {
+                idsCartasJD.push(c.id)
+            })
+            jugadorDestino.mano = jugadorDestino.mano.filter(carta => !idsCartasJD.includes(carta.id));
+                
             // Añadir las cartas al Destino
             jugadorDestino.mano.push(...cartasAEnviar);
             // Borrar las cartas del Origen
-            jugadorEnvia.mano = jugadorEnvia.mano.filter(carta => !cartasAEnviar.includes(carta));
+            const idsCartasJE = []
+            cartasAEnviar.forEach(c => {
+                idsCartasJE.push(c.id)
+            })
+            jugadorEnvia.mano = jugadorEnvia.mano.filter(carta => !idsCartasJE.includes(carta.id));
+
+            console.log(jugadorDestino.nombre + " tiene " + jugadorDestino.mano.length + " cartas" );
+            console.log(jugadorEnvia.nombre + " tiene " + jugadorEnvia.mano.length + " cartas");
 
             jugadorDestino.mano.sort((a, b) => b.fuerza - a.fuerza);
             jugadorEnvia.mano.sort((a, b) => b.fuerza - a.fuerza);
