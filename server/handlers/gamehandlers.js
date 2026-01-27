@@ -201,7 +201,7 @@ module.exports = (io, socket) => {
 // Fin de ronda e inicio de la siguiente
 function finalizarRonda(sala, io, salaId) {
     // Ordenar roles -> Los que terminaron (posicion > 0) primero. El que queda (-1) el último.
-    const ranking = sala.jugadores.sort((a, b) => {
+    const ranking = [...sala.jugadores].sort((a, b) => {
         if (a.posicionFinal > 0 && b.posicionFinal === -1) return -1;
         if (a.posicionFinal === -1 && b.posicionFinal > 0) return 1;
         return a.posicionFinal - b.posicionFinal;

@@ -1,6 +1,6 @@
 
 import styles from './mesa.module.css';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ESTADOS, ROLES } from '../constantes';
 
@@ -17,6 +17,10 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
   const [jugadoresLista,setJugadoresLista] = useState([]);
   const [numeroJugadores,setNumeroJugadores] = useState()
   const [ultimoJugadorId, setUltimoJugadorId] = useState(null);
+
+  const limpiandoMesaRef = useRef(false);
+  const colaJugadasRef = useRef([]);   // Cola de jugadas pendientes
+  const procesandoRef = useRef(false);
 
 useEffect(() => {
     
@@ -83,38 +87,19 @@ useEffect(() => {
     })
     
     socket.on("jugada_valida", (data) => {
-      setCartaMesa(data.cartas);
-      setUltimoJugadorId(data.jugadorId)
-      if(data.jugadorId === socket.id) {
-        setMisCartas(prevCartas => {
-          return prevCartas.filter(c => !data.cartas.find(dc => dc.id === c.id));
-        });
-        setSeleccionadas([]);
-      }else{
-        setRivales(prevRivales => 
-          prevRivales.map(r =>
-            r.id === data.jugadorId ? { ...r, numCartas: r.numCartas - data.cartas.length } : r
-          )
-        );
-      }
-    })
+      colaJugadasRef.current.push(data);
+      procesarCola();
+    });
   
-      socket.on("jugador_termino", (data) => {
-        setRivales((prev) =>
-          prev.map((r) =>
-            r.id === data.jugadorId ? { ...r, posicionFinal: data.posicion } : r
-        )
-      );
+    socket.on("jugador_termino", (data) => {
+      setRivales((prev) =>
+        prev.map((r) =>
+          r.id === data.jugadorId ? { ...r, posicionFinal: data.posicion } : r
+      )
+    );
     });
 
     socket.on("fin_ronda", (data) => {
-      const roles = [
-        ROLES.PRESIDENTE,
-        ROLES.VICE_PRESIDENTE,
-        ROLES.VICE_CULO,
-        ROLES.CULO
-      ];
-
       let miRolNuevo = ROLES.NEUTRO;
 
       data.ranking.forEach(entry => {
@@ -131,10 +116,14 @@ useEffect(() => {
 
       setMiRol(miRolNuevo);
 
-
+      limpiandoMesaRef.current = true;
       setTimeout(() => {
         setCartaMesa([]);
-      }, 2000);
+        setUltimoJugadorId(null);
+
+        limpiandoMesaRef.current = false;
+        procesarCola();
+      }, 1800);
 
       // Reset Ha Pasado
       resetHaPasado();
@@ -142,12 +131,17 @@ useEffect(() => {
     
     socket.on("mesa_limpia", (data) => {
       const motivo = data.motivo; // Probablemente no necesario
+
+      limpiandoMesaRef.current = true;
       setTimeout(() => {
         setCartaMesa([]);
         setUltimoJugadorId(null);
-      }, 2000);
 
-      // Reset Ha Pasado
+        limpiandoMesaRef.current = false;
+        procesarCola();
+      }, 1800);
+
+      setUltimoJugadorId(null);
       resetHaPasado();
     })
 
@@ -221,8 +215,6 @@ useEffect(() => {
       setEstado(ESTADOS.JUGANDO);
       setSeleccionadas([]);
     })
-
-    
     
     // ***********************************
     //  ======= CIERRE DE SOCKETS =======
@@ -234,16 +226,16 @@ useEffect(() => {
   }, [playerName, navigate, socket]);
 
   // --- CÁLCULOS PARA EL RENDERIZADO ---
-// --- ESTO DEBE IR JUSTO ANTES DEL RETURN ---
-const totalConectados = rivales.length;
-const maxCapacidad = numMaxJugadores || 6;
-const huecosDisponibles = Math.max(0, maxCapacidad - totalConectados);
-// El array de sitios debe estar disponible para el mapeo
-const sitios = ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der'];
+  // --- ESTO DEBE IR JUSTO ANTES DEL RETURN ---
+  const totalConectados = rivales.length;
+  const maxCapacidad = numMaxJugadores || 6;
+  const huecosDisponibles = Math.max(0, maxCapacidad - totalConectados);
+  // El array de sitios debe estar disponible para el mapeo
+  const sitios = ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der'];
 
   const resetHaPasado = () => {
     setRivales(prevRiv => prevRiv.map(rival => ({ ...rival, haPasado: false }))
-);
+  );
 
   }
 
@@ -295,7 +287,46 @@ const sitios = ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der'];
       return restantes;
     });
   };
-  
+
+  // === Funciones para la gestion de jugadas ===
+
+  const procesarCola = () => {
+    if (procesandoRef.current) return;
+    if (limpiandoMesaRef.current) return;
+    if (colaJugadasRef.current.length === 0) return;
+
+    procesandoRef.current = true;
+
+    const siguiente = colaJugadasRef.current.shift();
+    aplicarJugada(siguiente);
+
+    // pequeño delay opcional para animación
+    setTimeout(() => {
+      procesandoRef.current = false;
+      procesarCola(); // por si hay más
+    }, 500);
+  };
+
+  const aplicarJugada = (data) => {
+    setCartaMesa(data.cartas);
+    setUltimoJugadorId(data.jugadorId);
+
+    if (data.jugadorId === socket.id) {
+      setMisCartas(prev =>
+        prev.filter(c => !data.cartas.find(dc => dc.id === c.id))
+      );
+      setSeleccionadas([]);
+    } else {
+      setRivales(prev =>
+        prev.map(r =>
+          r.id === data.jugadorId
+            ? { ...r, numCartas: r.numCartas - data.cartas.length }
+            : r
+        )
+      );
+    }
+  };
+
   return (
     // CONTENEDOR PADRE
     <div className={styles['game-table']}
