@@ -70,6 +70,12 @@ module.exports = (io, socket) => {
         }
         
         let plin = (!limpiaMesa && mesa.cartasEnMesa.length > 0 && mesa.fuerzaActual === f);
+        if(plin){
+            io.to(salaId).emit("plinRealizado", { 
+            jugadorId: socket.id, 
+            cartas: cartasJugadas
+        });
+        }
         
         mesa.setFuerzaActual(f);
         mesa.setCartas(cartasJugadas);

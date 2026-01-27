@@ -17,6 +17,7 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
   const [jugadoresLista,setJugadoresLista] = useState([]);
   const [numeroJugadores,setNumeroJugadores] = useState()
   const [ultimoJugadorId, setUltimoJugadorId] = useState(null);
+  const [showPlin,setShowPlin] = useState();
 
   const limpiandoMesaRef = useRef(false);
   const colaJugadasRef = useRef([]);   // Cola de jugadas pendientes
@@ -43,8 +44,9 @@ useEffect(() => {
     if (!socket) return;
 
     socket.on("jugador_unido" , (data) => {
-      setJugadoresLista(data.jugadores);
-      setNumeroJugadores(jugadoresLista.length + 1);
+      const listaActualizada = data.jugadores;
+      setJugadoresLista(listaActualizada);
+      setNumeroJugadores(listaActualizada.length);
     })
 
     socket.on("ronda_iniciada",(data) =>{
@@ -215,6 +217,11 @@ useEffect(() => {
       setEstado(ESTADOS.JUGANDO);
       setSeleccionadas([]);
     })
+
+    socket.on("plinRealizado",(data) =>{
+      setShowPlin(true)
+      setTimeout(()=> setShowPlin(false),1200)
+    })
     
     // ***********************************
     //  ======= CIERRE DE SOCKETS =======
@@ -227,7 +234,7 @@ useEffect(() => {
 
   // --- CÁLCULOS PARA EL RENDERIZADO ---
   // --- ESTO DEBE IR JUSTO ANTES DEL RETURN ---
-  const totalConectados = rivales.length;
+  const totalConectados = jugadoresLista.length;
   const maxCapacidad = numMaxJugadores || 6;
   const huecosDisponibles = Math.max(0, maxCapacidad - totalConectados);
   // El array de sitios debe estar disponible para el mapeo
@@ -332,7 +339,9 @@ useEffect(() => {
     <div className={styles['game-table']}
       data-fase="Lobby"
       data-jugadores="0" // Acuérdate de poner "data-"
+      
     >
+      {showPlin && <div className={styles.plinAnimacion}>¡PLIN!</div>}
       <button
         className={styles.boton_pasar} 
         type="button"
@@ -406,8 +415,11 @@ useEffect(() => {
             <div className={styles.contenedorLobby}>
               <h3>Esperando jugadores ({jugadoresLista.length}/{numMaxJugadores})</h3>
             <div className={styles.listaEspera}>
-            <div className={styles.fichaEspera}>{playerName} (Tú)</div>
-            {rivales.map(r => <div key={r.id} className={styles.fichaEspera}>{r.nombre}</div>)}
+            {jugadoresLista.map(r => 
+              <div key={r.id} className={styles.fichaEspera}>
+                {r.nombre} 
+                {r.id === socket.id && " (Tú)"}
+              </div>)}
                 {/* Pintamos los huecos vacíos */}
             {[...Array(huecosDisponibles)].map((_, i) => (
         <div key={i} className={styles.fichaHueco}>Esperando...</div>

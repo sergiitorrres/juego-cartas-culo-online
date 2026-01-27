@@ -491,3 +491,22 @@
     box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
   }
 }
+.plinAnimacion {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 6rem;
+  font-weight: 900;
+  color: #f1c40f;
+  text-shadow: 0 0 20px rgba(0,0,0,0.6), 0 0 10px #f39c12;
+  z-index: 200;
+  pointer-events: none;
+  animation: plinPop 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes plinPop {
+  0% { opacity: 0; scale: 0.5; transform: translate(-50%, -50%) rotate(-10deg); }
+  20% { opacity: 1; scale: 1.1; rotate: 5deg; }
+  100% { opacity: 0; scale: 1; transform: translate(-50%, -150%); }
+}
