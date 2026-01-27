@@ -27,16 +27,15 @@ const PartidaPublica = ({ socket, playerName, setMaxJugadores}) => {
 
     socket.emit('pedir_salas');
 
-    socket.on('salas_publicas', (data) => {
-    if (Array.isArray(data)) {
-        setSalas(data);
-      } else if (data && Array.isArray(data.salas)) {
-        setSalas(data.salas);
-      } else {
-        console.error("Formato de salas desconocido:", data);
-        setSalas([]); // Ponemos array vacío para evitar pantalla blanca
-      }
+    socket.on('salas_publicas', (salas) => {
+      setSalas(salas);
     });
+
+
+    socket.on("connect", () => {
+        socket.emit("pedir_salas");
+    });
+
 
     socket.on("sala_asignada", (data) => {
         console.log("Me han asignado la sala:", data.salaId);
@@ -59,6 +58,7 @@ const PartidaPublica = ({ socket, playerName, setMaxJugadores}) => {
       socket.off("error");
       socket.off("sala_asignada")
       socket.off('salas_publicas');
+      socket.off("connect");
     });
   }, [socket, navigate]);
     

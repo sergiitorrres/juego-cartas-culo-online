@@ -3,6 +3,7 @@ import styles from './mesa.module.css';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ESTADOS, ROLES } from '../constantes';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Mesa = ({playerName, socket, numMaxJugadores}) => {
   const navigate = useNavigate();
@@ -43,7 +44,10 @@ useEffect(() => {
     if (!playerName) navigate('/');
     if (!socket) return;
 
+    socket.emit("pedir_jugadores");
+
     socket.on("jugador_unido" , (data) => {
+      
       const listaActualizada = data.jugadores;
       setJugadoresLista(listaActualizada);
       setNumeroJugadores(listaActualizada.length);
@@ -446,7 +450,7 @@ useEffect(() => {
             className = {styles.boton_pasar}
             type="button"
             onClick={handlerPasarTurno}
-            disabled={turno !== socket?.id || cartasMesa.length === 0}
+            disabled={turno !== socket?.id || cartasMesa.length === 0 || limpiandoMesaRef.current === true}
           >
           Pasar
         </button>
