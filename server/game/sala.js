@@ -92,6 +92,10 @@ class Sala {
         return id == this.jugadores[this.turnoActual].id 
     }
 
+    checkFirstTurn() {
+        return this.mesa.cartasEnMesa.length === 0;
+    }
+
     jugadoresResetPass() {
         this.jugadores.forEach(j => j.haPasado = false);
     }

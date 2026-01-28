@@ -131,43 +131,73 @@ module.exports = (io, socket) => {
         io.emit("salas_publicas", obtenerSalasPublicas() );
     });
     
+    socket.on("salir_sala", () => {
+        salirDeSala(io, socket, "manual");
+    });
 
     socket.on("disconnect", () => {
+        salirDeSala(io, socket, "disconnect");
+    });
 
-        const salaId = socket.data.salaId
 
-        if (!salaId || !rooms[salaId]) return;
+    function salirDeSala(io, socket, motivo = "manual") {
+    const salaId = socket.data.salaId;
+    if (!salaId || !rooms[salaId]) return;
 
-        const partida = rooms[salaId];
+    const partida = rooms[salaId];
 
-        if (partida.estado === "LOBBY") {
-            partida.jugadores = partida.jugadores.filter(jugador => jugador.id !== socket.id);
+    // Evitar doble salida
+    if (socket.data.yaSalio) return;
+    socket.data.yaSalio = true;
 
-            if (partida.jugadores.length <= 0) {
+    // Quitamos al jugador de la lista
+    const jugadorIndex = partida.jugadores.findIndex(j => j.id === socket.id);
+        if (jugadorIndex === -1) return;
+
+        if (partida.estado === ESTADOS.LOBBY) {
+            partida.jugadores.splice(jugadorIndex, 1);
+            socket.leave(salaId);
+            delete socket.data.salaId;
+
+            io.to(salaId).emit("jugador_unido", {
+                jugadores: partida.jugadores,
+                maxJ: partida.maxJugadores
+            });
+
+            console.log(`Jugador salió del lobby de ${salaId}. Quedan ${partida.jugadores.length}`);
+
+            if(partida.jugadores.length === 0) {
                 delete rooms[salaId];
                 console.log(`Sala ${salaId} eliminada (vacía)`);
-                console.log("Salas vivas:", Object.keys(rooms));
-            } else {
-                io.to(salaId).emit("jugador_unido", { 
-                    jugadores: partida.jugadores, 
-                    maxJ: rooms[salaId].maxJugadores
-                });
-                console.log(`Usuario salió de ${salaId} (Lobby). Quedan: ${partida.jugadores.length}`);
+                return;
             }
-        } 
-        
-        else {
-            console.log(`JUGADOR ABANDONÓ PARTIDA EN CURSO: ${salaId}`);
-            
-            io.to(salaId).emit("error", { mensaje: "Un jugador se ha desconectado. La partida ha terminado." });
-            io.to(salaId).emit("partida_cancelada", {});
-            
-            delete rooms[salaId];
-            console.log("Salas vivas:", Object.keys(rooms));
-            
+        } else {
+            /*
+            // Partida en curso → reemplazar por un bot
+            const jugadorAbandonado = partida.jugadores[jugadorIndex];
+            partida.jugadores[jugadorIndex] = {
+                id: `BOT-${Date.now()}`, // ID temporal
+                nombre: `${jugadorAbandonado.nombre} (BOT)`,
+                esBot: true,
+                numCartas: jugadorAbandonado.numCartas || 0,
+                haPasado: false,
+                // aquí se pueden agregar más campos para que el bot juegue automáticamente
+            };
+
+            socket.leave(salaId);
+            delete socket.data.salaId;
+
+            io.to(salaId).emit("jugador_sustituido", {
+                indice: jugadorIndex,
+                bot: partida.jugadores[jugadorIndex]
+            });
+
+            console.log(`Jugador ${jugadorAbandonado.nombre} reemplazado por bot en ${salaId}`);
+            */
         }
-        io.emit("salas_publicas", obtenerSalasPublicas() );
-    });
+
+        io.emit("salas_publicas", obtenerSalasPublicas());
+    }
 
     
 }

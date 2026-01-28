@@ -29,7 +29,7 @@ module.exports = (io, socket) => {
             }
         });
         console.log("Intentando iniciar partida3")
-        io.to(salaId).emit("turno_jugador", { turno: resultado.turnoInicial });
+        io.to(salaId).emit("turno_jugador", { turno: resultado.turnoInicial, esPrimero: true });
         console.log(`Partida iniciada en ${salaId}`);
     });
 
@@ -123,7 +123,7 @@ module.exports = (io, socket) => {
             
             // Si tiro 2 de oros y sigue jugando, repite turno
             if (esDosDeOros && jugador.mano.length > 0) {
-                io.to(salaId).emit("turno_jugador", { turno: jugador.id });
+                io.to(salaId).emit("turno_jugador", { turno: jugador.id, esPrimero: limpiaMesa});
                 return;
             }
         }
@@ -141,7 +141,7 @@ module.exports = (io, socket) => {
             io.to(salaId).emit("mesa_limpia", { motivo: "Nadie ha tirado cartas" });
         }
 
-        if(nextJ) io.to(salaId).emit("turno_jugador", { turno: nextJ.id });
+        if(nextJ) io.to(salaId).emit("turno_jugador", { turno: nextJ.id, esPrimero: limpiaMesa });
     });
 
 
@@ -151,6 +151,10 @@ module.exports = (io, socket) => {
 
         if(!sala || !sala.checkIfTurn(socket.id)) {
             return socket.emit("error", {mensaje: "No es tu turno"})
+        }
+
+        if(sala.checkFirstTurn()) {
+            return socket.emit("error", {mensaje: "No puedes saktar en el primer turno"})
         }
 
         const jugador = sala.jugadores.find(j => j.id === socket.id);
@@ -165,7 +169,7 @@ module.exports = (io, socket) => {
             sala.jugadoresResetPass()
             io.to(salaId).emit("mesa_limpia", {motivo: "Nadie ha tirado cartas"})
         }
-        io.to(salaId).emit("turno_jugador", {turno: nextJ.id})
+        io.to(salaId).emit("turno_jugador", {turno: nextJ.id, esPrimero: false})
     });
 
     socket.on("dar_cartas", (data, callback) => {
@@ -196,7 +200,7 @@ module.exports = (io, socket) => {
         if(info.faseTerminada) {
             io.to(salaId).emit("fase_intercambio_finalizada", {});
             const idTurno = sala.jugadores[sala.turnoActual].id;
-            io.to(salaId).emit("turno_jugador", { turno: idTurno });
+            io.to(salaId).emit("turno_jugador", { turno: idTurno, esPrimero: true });
             // Por si acaso
             sala.intercambiosPendientes = []
             sala.mapa = new Map()
@@ -258,7 +262,7 @@ function finalizarRonda(sala, io, salaId) {
             });
         } else {
             const idTurno = sala.jugadores[sala.turnoActual].id;
-            io.to(salaId).emit("turno_jugador", { turno: idTurno });
+            io.to(salaId).emit("turno_jugador", { turno: idTurno, esPrimero: true });
         }
     }, 5000);
 

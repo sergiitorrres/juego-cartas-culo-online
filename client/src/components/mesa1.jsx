@@ -23,6 +23,7 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
   const [ultimaJugada, setUltimaJugada] = useState([]);
   const [hacerBarrido, setHacerBarrido] = useState(false);
   const [maxJugadores, setMaxJugadores] = useState(numMaxJugadores || 6);
+  const [esPrimero, setEsPrimero] = useState(false);
 
 
   const limpiandoMesaRef = useRef(false);
@@ -89,6 +90,7 @@ useEffect(() => {
 
     socket.on("turno_jugador",(data) =>{
       setTurno(data.turno);
+      setEsPrimero(data.esPrimero);
     })
 
     socket.on("error",(data)=>{
@@ -488,7 +490,7 @@ useEffect(() => {
         className={styles.boton_pasar}
         type="button"
         onClick={handlerPasarTurno}
-        disabled={turno !== socket?.id || cartasMesa.length === 0 || limpiandoMesaRef.current === true}
+        disabled={turno !== socket?.id || esPrimero}
       >
         Pasar
       </button>
