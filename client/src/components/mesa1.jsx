@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 
 import styles from './mesa.module.css';
 import React, { useState, useEffect, useRef } from 'react';
@@ -21,6 +22,8 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
   const [showPlin,setShowPlin] = useState();
   const [ultimaJugada, setUltimaJugada] = useState([]);
   const [hacerBarrido, setHacerBarrido] = useState(false);
+  const [maxJugadores, setMaxJugadores] = useState(numMaxJugadores || 6);
+
 
   const limpiandoMesaRef = useRef(false);
   const colaJugadasRef = useRef([]);   // Cola de jugadas pendientes
@@ -52,7 +55,7 @@ useEffect(() => {
       const listaActualizada = data.jugadores;
       setJugadoresLista(listaActualizada);
       setNumeroJugadores(listaActualizada.length);
-      numMaxJugadores = data.maxJ;
+      setMaxJugadores(data.maxJ);
     })
 
     socket.on("ronda_iniciada",(data) =>{
@@ -238,13 +241,13 @@ useEffect(() => {
       socket.off("jugador_termino"); socket.off("fin_ronda"); socket.off("fase_intercambio"); socket.off("pedir_cartas"); socket.off("dar_cartas"); 
       socket.off("cartas_donadas"); socket.off("fase_intercambio_finalizada"); socket.off("mesa_limpia"); socket.off("jugador_unido"); socket.off("intercambio_incorrecto")
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerName, navigate, socket]);
 
   // --- CÁLCULOS PARA EL RENDERIZADO ---
   // --- ESTO DEBE IR JUSTO ANTES DEL RETURN ---
   const totalConectados = jugadoresLista.length;
-  const maxCapacidad = numMaxJugadores || 6;
-  const huecosDisponibles = Math.max(0, maxCapacidad - totalConectados);
+  const huecosDisponibles = Math.max(0, maxJugadores - totalConectados);
   // El array de sitios debe estar disponible para el mapeo
   const sitios = ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der'];
 
@@ -423,7 +426,7 @@ useEffect(() => {
   {/* 1. LOBBY: Se renderiza de forma independiente para que no lo afecte el tamaño de la pila */}
   {estado === ESTADOS.LOBBY && (
     <div className={styles.contenedorLobby}>
-      <h3>Esperando jugadores ({jugadoresLista.length}/{numMaxJugadores})</h3>
+      <h3>Esperando jugadores ({jugadoresLista.length}/{maxJugadores})</h3>
       <div className={styles.listaEspera}>
         {jugadoresLista.map(r => (
           <div key={r.id} className={styles.fichaEspera}>
@@ -474,7 +477,7 @@ useEffect(() => {
         className={styles.botonInicioPartida}
         type="button"
         onClick={handlerIniciarPartida}
-        disabled={jugadoresLista.length < numMaxJugadores}
+        disabled={jugadoresLista.length < maxJugadores || jugadoresLista[0]?.id !== socket?.id}
       > 
         INICIAR PARTIDA 
       </button>
