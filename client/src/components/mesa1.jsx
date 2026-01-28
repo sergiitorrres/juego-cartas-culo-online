@@ -47,10 +47,10 @@ useEffect(() => {
     socket.emit("pedir_jugadores");
 
     socket.on("jugador_unido" , (data) => {
-      
       const listaActualizada = data.jugadores;
       setJugadoresLista(listaActualizada);
       setNumeroJugadores(listaActualizada.length);
+      numMaxJugadores = data.maxJ;
     })
 
     socket.on("ronda_iniciada",(data) =>{
@@ -441,11 +441,13 @@ useEffect(() => {
             className={styles.botonInicioPartida}
             type="button"
             onClick={handlerIniciarPartida}
+            disabled={jugadoresLista.length < numMaxJugadores /*|| socket?.id !== jugadoresLista[0]?.id*/}
           > 
             INICIAR PARTIDA 
             </button>
           )}
-        
+
+          {estado === ESTADOS.JUGANDO && (
           <button
             className = {styles.boton_pasar}
             type="button"
@@ -454,6 +456,7 @@ useEffect(() => {
           >
           Pasar
         </button>
+          )}
         
         </div>  
       </div>

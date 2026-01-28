@@ -37,6 +37,17 @@ function generarIdUnico(){
 }
 
 module.exports = (io, socket) => {
+
+    socket.on("pedir_jugadores", () => {
+        const salaId = socket.data.salaId;
+        if (!salaId || !rooms[salaId]) return;
+
+        socket.emit("jugador_unido", {
+            jugadores: rooms[salaId].jugadores,
+            maxJ: rooms[salaId].maxJugadores
+        });
+    });
+
     
     socket.on("pedir_salas", () => {
         socket.emit("salas_publicas", obtenerSalasPublicas());
@@ -71,10 +82,13 @@ module.exports = (io, socket) => {
         socket.emit("sala_asignada", { salaId: salaId });
 
         // Avisa a todos incluyendome a mi
-        io.to(salaId).emit("jugador_unido", {jugadores: partida.jugadores})
+        io.to(salaId).emit("jugador_unido", {
+            jugadores: partida.jugadores,
+            maxJ: rooms[salaId].maxJugadores
+        })
         console.log(`${nombre} se unió a ${salaId}`);
         
-         io.emit("salas_publicas", { salas: obtenerSalasPublicas() });
+        io.emit("salas_publicas", obtenerSalasPublicas() );
     });
     
     socket.on("unirse_sala", (data, callback) => {
@@ -108,10 +122,13 @@ module.exports = (io, socket) => {
         socket.emit("sala_asignada", { salaId: salaId });
 
         // Avisa a todos incluyendome a mi
-        io.to(salaId).emit("jugador_unido", {jugadores: partida.jugadores})
+        io.to(salaId).emit("jugador_unido", {
+            jugadores: partida.jugadores,
+            maxJ: rooms[salaId].maxJugadores
+        })
         console.log(`${nombre} se unió a ${salaId}`);
 
-        io.emit("salas_publicas", { salas: obtenerSalasPublicas() });
+        io.emit("salas_publicas", obtenerSalasPublicas() );
     });
     
 
@@ -129,8 +146,12 @@ module.exports = (io, socket) => {
             if (partida.jugadores.length <= 0) {
                 delete rooms[salaId];
                 console.log(`Sala ${salaId} eliminada (vacía)`);
+                console.log("Salas vivas:", Object.keys(rooms));
             } else {
-                io.to(salaId).emit("jugador_unido", { jugadores: partida.jugadores });
+                io.to(salaId).emit("jugador_unido", { 
+                    jugadores: partida.jugadores, 
+                    maxJ: rooms[salaId].maxJugadores
+                });
                 console.log(`Usuario salió de ${salaId} (Lobby). Quedan: ${partida.jugadores.length}`);
             }
         } 
@@ -142,9 +163,10 @@ module.exports = (io, socket) => {
             io.to(salaId).emit("partida_cancelada", {});
             
             delete rooms[salaId];
+            console.log("Salas vivas:", Object.keys(rooms));
             
         }
-        io.emit("salas_publicas", { salas: obtenerSalasPublicas() });
+        io.emit("salas_publicas", obtenerSalasPublicas() );
     });
 
     
