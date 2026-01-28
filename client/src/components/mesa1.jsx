@@ -19,6 +19,8 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
   const [numeroJugadores,setNumeroJugadores] = useState()
   const [ultimoJugadorId, setUltimoJugadorId] = useState(null);
   const [showPlin,setShowPlin] = useState();
+  const [ultimaJugada, setUltimaJugada] = useState([]);
+  const [hacerBarrido, setHacerBarrido] = useState(false);
 
   const limpiandoMesaRef = useRef(false);
   const colaJugadasRef = useRef([]);   // Cola de jugadas pendientes
@@ -126,6 +128,7 @@ useEffect(() => {
       setTimeout(() => {
         setCartaMesa([]);
         setUltimoJugadorId(null);
+        setUltimaJugada([]);
 
         limpiandoMesaRef.current = false;
         procesarCola();
@@ -144,6 +147,7 @@ useEffect(() => {
         setUltimoJugadorId(null);
 
         limpiandoMesaRef.current = false;
+        setHacerBarrido(true);
         procesarCola();
       }, 1800);
 
@@ -319,6 +323,7 @@ useEffect(() => {
   };
 
   const aplicarJugada = (data) => {
+    setHacerBarrido(false);
     setCartaMesa(data.cartas);
     setUltimoJugadorId(data.jugadorId);
 
@@ -413,54 +418,80 @@ useEffect(() => {
 
 
       {/* --- ZONA 2: CENTRO DE LA MESA --- */}
-      <div className={styles['table-center']}>
-        <div className={styles['pila-central']}>
-          {estado === ESTADOS.LOBBY && (
-            <div className={styles.contenedorLobby}>
-              <h3>Esperando jugadores ({jugadoresLista.length}/{numMaxJugadores})</h3>
-            <div className={styles.listaEspera}>
-            {jugadoresLista.map(r => 
-              <div key={r.id} className={styles.fichaEspera}>
-                {r.nombre} 
-                {r.id === socket.id && " (Tú)"}
-              </div>)}
-                {/* Pintamos los huecos vacíos */}
-            {[...Array(huecosDisponibles)].map((_, i) => (
-        <div key={i} className={styles.fichaHueco}>Esperando...</div>
-      ))}
-    </div>
-  </div>
-)}
-          {cartasMesa.map((carta,index) =>(
-            <img key={index} alt = {carta.id} src={`/assets/images/cartas/${carta.id}.png`}/>
-          ))}
+<div className={styles['table-center']}>
+  
+  {/* 1. LOBBY: Se renderiza de forma independiente para que no lo afecte el tamaño de la pila */}
+  {estado === ESTADOS.LOBBY && (
+    <div className={styles.contenedorLobby}>
+      <h3>Esperando jugadores ({jugadoresLista.length}/{numMaxJugadores})</h3>
+      <div className={styles.listaEspera}>
+        {jugadoresLista.map(r => (
+          <div key={r.id} className={styles.fichaEspera}>
+            {r.nombre} {r.id === socket.id && " (Tú)"}
           </div>
-        <div className={styles.controles_centro}>
-          {estado === ESTADOS.LOBBY && (
-            <button
-            className={styles.botonInicioPartida}
-            type="button"
-            onClick={handlerIniciarPartida}
-            disabled={jugadoresLista.length < numMaxJugadores /*|| socket?.id !== jugadoresLista[0]?.id*/}
-          > 
-            INICIAR PARTIDA 
-            </button>
-          )}
-
-          {estado === ESTADOS.JUGANDO && (
-          <button
-            className = {styles.boton_pasar}
-            type="button"
-            onClick={handlerPasarTurno}
-            disabled={turno !== socket?.id || cartasMesa.length === 0 || limpiandoMesaRef.current === true}
-          >
-          Pasar
-        </button>
-          )}
-        
-        </div>  
+        ))}
+        {/* Pintamos los huecos vacíos */}
+        {[...Array(huecosDisponibles)].map((_, i) => (
+          <div key={`hueco-${i}`} className={styles.fichaHueco}>Esperando...</div>
+        ))}
       </div>
+    </div>
+  )}
 
+  {/* 2. PILA DE CARTAS: Ahora es un contenedor absoluto para no mover al Lobby ni a los botones */}
+  {/* --- BUSCA TU ZONA DE LA PILA CENTRAL --- */}
+<div className={styles['pila-central']}>
+  <AnimatePresence>
+    {cartasMesa.map((carta, index) => (
+      <motion.img
+        key={`${carta.id}-${index}`}
+        alt={carta.id}
+        src={`/assets/images/cartas/${carta.id}.png`}
+        className={styles.cartaMesaAcumulada}
+
+        initial={{ y: 250, opacity: 0, scale: 0.6 }}
+        animate={{
+          y: 0,           // Las mantenemos en la misma línea horizontal
+          x: index * 35,  // <--- CAMBIO CLAVE: Aumentamos la separación horizontal.
+                          // Ajusta el valor '35' para más o menos separación.
+          opacity: 1,
+          scale: 1,
+          rotate: 0       // Quitamos la rotación para que se vean alineadas
+        }}
+        exit={hacerBarrido ? { x: 800, opacity: 0 } : { opacity: 0, transition: { duration: 0 } }}
+
+        transition={{ type: "spring", stiffness: 250, damping: 20 }}
+
+        style={{ zIndex: index }}
+      />
+    ))}
+  </AnimatePresence>
+</div>
+  {/* 3. CONTROLES: Botones de acción */}
+  <div className={styles.controles_centro}>
+    {estado === ESTADOS.LOBBY && (
+      <button
+        className={styles.botonInicioPartida}
+        type="button"
+        onClick={handlerIniciarPartida}
+        disabled={jugadoresLista.length < numMaxJugadores}
+      > 
+        INICIAR PARTIDA 
+      </button>
+    )}
+
+    {estado === ESTADOS.JUGANDO && (
+      <button
+        className={styles.boton_pasar}
+        type="button"
+        onClick={handlerPasarTurno}
+        disabled={turno !== socket?.id || cartasMesa.length === 0 || limpiandoMesaRef.current === true}
+      >
+        Pasar
+      </button>
+    )}
+  </div>  
+</div>
 
       {/* --- ZONA 3: TÚ (ABAJO) - LO QUE TE FALTABA --- */}
       <div className={`

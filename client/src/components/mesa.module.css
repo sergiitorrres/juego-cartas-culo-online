@@ -73,27 +73,23 @@
   flex-grow: 1;
   width: 100%;
   position: relative;
-  /* Esto asegura que el centro no se pegue al borde superior */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Centra el Lobby verticalmente */
+  align-items: center;
   margin-top: 20px; 
   margin-bottom: 20px;
 }
 
 .pila-central {
   position: absolute;
-  /* Centramos respecto al contenedor .table-center */
+  /* Ajusta la altura (60%, 65%...) según te guste más */
   top: 65%; 
   left: 50%;
   transform: translate(-50%, -50%);
-  
-  /* Tamaño fijo del contenedor para que las cartas no bailen */
-  width: 300px;
-  height: 200px;
-  
-  display: flex;
-  justify-content: center;
-  align-items: center;
   z-index: 5;
-  pointer-events: none; /* Para que no bloquee clicks si algo pasa por debajo */
+  /* No necesitamos flex ni tamaños mínimos aquí */
+  pointer-events: none;
 }
 
 .pila-central img {
@@ -103,51 +99,28 @@
   border: 2px solid white;
   border-radius: 8px;
   box-shadow: 2px 4px 10px rgba(0,0,0,0.5);
-  transition: all 0.3s ease-out; /* Animación suave al aparecer */
+  /* Centramos la imagen respecto al punto central */
+  margin-left: -55px; 
+  margin-top: -75px;
 }
 
 /* Efecto abanico para ver si es pareja o trío */
-.pila-central img:nth-child(1)  { transform: rotate(-12deg) translate(-10px, 5px); }
-.pila-central img:nth-child(2)  { transform: rotate(8deg)  translate(12px, -8px); }
-.pila-central img:nth-child(3)  { transform: rotate(-4deg) translate(-5px, 12px); }
-.pila-central img:nth-child(4)  { transform: rotate(15deg) translate(18px, 4px); }
-.pila-central img:nth-child(5)  { transform: rotate(-9deg) translate(-15px, -10px); }
-.pila-central img:nth-child(6)  { transform: rotate(3deg)  translate(2px, 15px); }
-.pila-central img:nth-child(7)  { transform: rotate(-18deg) translate(-20px, 2px); }
-.pila-central img:nth-child(8)  { transform: rotate(11deg) translate(10px, -15px); }
-.pila-central img:nth-child(9)  { transform: rotate(-2deg) translate(-4px, -20px); }
-.pila-central img:nth-child(10) { transform: rotate(20deg) translate(25px, 10px); }
 
-.pila-central img:last-child {
-  z-index: 20;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.4), 2px 4px 12px rgba(0,0,0,0.6);
-}
-@keyframes tirarCarta {
-  from {
-    opacity: 0;
-    transform: translateY(200px) scale(1.5) rotate(0deg);
-  }
-  to {
-    opacity: 1;
-    /* El transform final lo sobreescribirá el nth-child de arriba */
-  }
-}
+
 
 .pila-central img:last-child {
   animation: tirarCarta 0.4s ease-out forwards;
 }
 .controles_centro {
   position: absolute;
-  bottom: 0px;        /* Lo pega al borde inferior de la zona central */
+  bottom: 0px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
-  z-index: 10;        /* Para que esté por encima de cualquier otra cosa */
-  min-height: auto;   /* Quitamos el min-height para que no ocupe espacio extra */
-  margin-top: 0;      /* Eliminamos el margen que movía las cartas */
+  z-index: 10;
 }
 
 /* --- 4. ZONA JUGADOR (ABAJO) --- */
@@ -516,4 +489,45 @@
   0% { opacity: 0; scale: 0.5; transform: translate(-50%, -50%) rotate(-10deg); }
   20% { opacity: 1; scale: 1.1; rotate: 5deg; }
   100% { opacity: 0; scale: 1; transform: translate(-50%, -150%); }
+}
+.jugadaActual {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.cartaEnMesa {
+  width: 110px; /* Tamaño de las cartas en el centro */
+  height: auto;
+  border: 2px solid white;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+  background-color: white;
+  /* El solapamiento se controla con el marginLeft dinámico en el JSX */
+}
+.cartaMesaNueva {
+  width: 110px;
+  height: auto;
+  border: 2px solid white;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  background-color: white;
+  /* Quitamos position absolute para que el flujo flex funcione */
+  position: relative; 
+  transition: transform 0.2s;
+}
+.cartaMesaAcumulada {
+  position: absolute; /* Fundamental para que se apilen en el mismo sitio */
+  width: 110px;
+  height: auto;
+  border: 2px solid white;
+  border-radius: 8px;
+  box-shadow: 2px 4px 10px rgba(0,0,0,0.4);
+  
+  /* CENTRADO MANUAL: Esto es clave. */
+  /* Margen negativo de la mitad del ancho y alto para centrar el punto 0,0 */
+  margin-left: -55px; 
+  margin-top: -75px;
+  
+  /* Evita parpadeos en las animaciones */
+  backface-visibility: hidden;
 }
