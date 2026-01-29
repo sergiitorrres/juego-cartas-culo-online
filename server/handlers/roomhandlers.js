@@ -179,7 +179,7 @@ module.exports = (io, socket) => {
                 const jugadorHumano = partida.jugadores[index];
 
                 // Crear un bot para reemplazar
-                const Bot = require('./Bot');
+                const Bot = require('../game/bot');
                 const bot = new Bot(jugadorHumano.nombre + " (Bot)");
 
                 bot.mano = jugadorHumano.mano; // Copiar cartas

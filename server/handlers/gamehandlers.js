@@ -34,10 +34,7 @@ module.exports = (io, socket) => {
         io.to(salaId).emit("turno_jugador", { turno: resultado.turnoInicial, esPrimero: true });
         console.log(`Partida iniciada en ${salaId}`);
 
-        const jugadaBot = sala.checkJuegaBot();
-        if(jugadaBot) {
-            setTimeout();
-        }
+        ejecutarBot(io, sala, salaId)
     });
 
     socket.on("lanzar_cartas", (data, callback) => {
@@ -89,7 +86,7 @@ module.exports = (io, socket) => {
         mesa.setCantidad(cartasJugadas.length);
         mesa.setUltimoJugador(jugador);
         
-        const idsCartasJugadas = []
+        let idsCartasJugadas = []
         cartasJugadas.forEach(c => {
             idsCartasJugadas.push(c.id)
         })
@@ -131,6 +128,8 @@ module.exports = (io, socket) => {
             // Si tiro 2 de oros y sigue jugando, repite turno
             if (esDosDeOros && jugador.mano.length > 0) {
                 io.to(salaId).emit("turno_jugador", { turno: jugador.id, esPrimero: limpiaMesa});
+
+                ejecutarBot(io, sala, salaId)
                 return;
             }
         }
@@ -148,7 +147,11 @@ module.exports = (io, socket) => {
             io.to(salaId).emit("mesa_limpia", { motivo: "Nadie ha tirado cartas" });
         }
 
-        if(nextJ) io.to(salaId).emit("turno_jugador", { turno: nextJ.id, esPrimero: limpiaMesa });
+        if(nextJ) { 
+            io.to(salaId).emit("turno_jugador", { turno: nextJ.id, esPrimero: limpiaMesa });
+            
+            ejecutarBot(io, sala, salaId)
+        }
     });
 
 
@@ -177,6 +180,8 @@ module.exports = (io, socket) => {
             io.to(salaId).emit("mesa_limpia", {motivo: "Nadie ha tirado cartas"})
         }
         io.to(salaId).emit("turno_jugador", {turno: nextJ.id, esPrimero: false})
+
+        ejecutarBot(io, sala, salaId)
     });
 
     socket.on("dar_cartas", (data, callback) => {
@@ -208,11 +213,30 @@ module.exports = (io, socket) => {
             io.to(salaId).emit("fase_intercambio_finalizada", {});
             const idTurno = sala.jugadores[sala.turnoActual].id;
             io.to(salaId).emit("turno_jugador", { turno: idTurno, esPrimero: true });
+
+            ejecutarBot(io, sala, salaId)
             // Por si acaso
             sala.intercambiosPendientes = []
             sala.mapa = new Map()
         }
     });
+}
+
+function ejecutarBot(io, sala, salaId) {
+    const jugadaBot = sala.checkJuegaBot();
+    if(jugadaBot) {
+        setTimeout(() => {
+            if(jugadaBot.pasa) {
+                io.to(salaId).emit("jugador_paso_notif", {jugadorId: jugadaBot.id});
+
+            } else {
+                io.to(salaId).emit("jugada_valida", { 
+                    jugadorId: jugadaBot.id, 
+                    cartas: cartasJugadas
+                });
+            }
+        }, 1000);
+    }
 }
 
 // Fin de ronda e inicio de la siguiente
@@ -270,7 +294,9 @@ function finalizarRonda(sala, io, salaId) {
         } else {
             const idTurno = sala.jugadores[sala.turnoActual].id;
             io.to(salaId).emit("turno_jugador", { turno: idTurno, esPrimero: true });
-        }
+
+            ejecutarBot(io, sala, salaId)
+    }
     }, 5000);
 
 

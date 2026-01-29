@@ -103,9 +103,21 @@ class Sala {
         const jugada = jugador.jugar(this.mesa); // Tu función 'jugar' devuelve cartas o null si pasa
         const pasa = !jugada || jugada.length === 0;
 
+        if(pasa) {
+            jugador.haPasado = true;
+        } else {
+
+            let idsCartasJugadas = []
+            jugada.forEach(c => {
+                idsCartasJugadas.push(c.id)
+            })
+            jugador.mano = jugador.mano.filter(c => !idsCartasJugadas.includes(c.id));
+        }
+
         return {
             pasa: pasa,
-            jugada: jugada
+            jugada: jugada,
+            id: jugador.id
         };
     }
 
