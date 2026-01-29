@@ -141,17 +141,17 @@ module.exports = (io, socket) => {
 
 
     function salirDeSala(io, socket, motivo = "manual") {
-    const salaId = socket.data.salaId;
-    if (!salaId || !rooms[salaId]) return;
+        const salaId = socket.data.salaId;
+        if (!salaId || !rooms[salaId]) return;
 
-    const partida = rooms[salaId];
+        const partida = rooms[salaId];
 
-    // Evitar doble salida
-    if (socket.data.yaSalio) return;
-    socket.data.yaSalio = true;
+        // Evitar doble salida
+        if (socket.data.yaSalio) return;
+        socket.data.yaSalio = true;
 
-    // Quitamos al jugador de la lista
-    const jugadorIndex = partida.jugadores.findIndex(j => j.id === socket.id);
+        // Quitamos al jugador de la lista
+        const jugadorIndex = partida.jugadores.findIndex(j => j.id === socket.id);
         if (jugadorIndex === -1) return;
 
         if (partida.estado === ESTADOS.LOBBY) {
@@ -172,28 +172,32 @@ module.exports = (io, socket) => {
                 return;
             }
         } else {
-            /*
-            // Partida en curso → reemplazar por un bot
-            const jugadorAbandonado = partida.jugadores[jugadorIndex];
-            partida.jugadores[jugadorIndex] = {
-                id: `BOT-${Date.now()}`, // ID temporal
-                nombre: `${jugadorAbandonado.nombre} (BOT)`,
-                esBot: true,
-                numCartas: jugadorAbandonado.numCartas || 0,
-                haPasado: false,
-                // aquí se pueden agregar más campos para que el bot juegue automáticamente
-            };
+            console.log(`JUGADOR ABANDONÓ PARTIDA EN CURSO: ${salaId}`);
 
-            socket.leave(salaId);
-            delete socket.data.salaId;
+            const index = partida.jugadores.findIndex(j => j.id === socket.id);
+            if (index !== -1) {
+                const jugadorHumano = partida.jugadores[index];
 
-            io.to(salaId).emit("jugador_sustituido", {
-                indice: jugadorIndex,
-                bot: partida.jugadores[jugadorIndex]
-            });
+                // Crear un bot para reemplazar
+                const Bot = require('./Bot');
+                const bot = new Bot(jugadorHumano.nombre + " (Bot)");
 
-            console.log(`Jugador ${jugadorAbandonado.nombre} reemplazado por bot en ${salaId}`);
-            */
+                bot.mano = jugadorHumano.mano; // Copiar cartas
+                bot.rol = jugadorHumano.rol;
+                bot.posicionFinal = jugadorHumano.posicionFinal;
+                bot.haPasado = jugadorHumano.haPasado;
+
+                // Reemplazar jugador en la lista
+                partida.jugadores[index] = bot;
+
+                // Si quieres notificar al resto:
+                io.to(salaId).emit("jugador_reemplazado", {
+                    jugadorId: socket.id,
+                    nuevoId: bot.id,
+                    nombre: bot.nombre
+                    // Una imagen del bot??
+                });
+            }
         }
 
         io.emit("salas_publicas", obtenerSalasPublicas());

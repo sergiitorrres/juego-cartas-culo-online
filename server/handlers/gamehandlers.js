@@ -18,19 +18,26 @@ module.exports = (io, socket) => {
         
         console.log("Intentando iniciar partida2")
         sala.jugadores.forEach(j => {
-            const s = io.sockets.sockets.get(j.id);
-            if (s) {
-                s.emit("ronda_iniciada", { 
-                    misCartas: j.mano,
-                    jugadores: sala.jugadores.map(p => ({
-                        id: p.id, nombre: p.nombre, numCartas: p.mano.length, rol: p.rol
-                    }))
-                });
+            if (!j.esBot) {
+                const s = io.sockets.sockets.get(j.id);
+                if(s) {
+                    s.emit("ronda_iniciada", { 
+                        misCartas: j.mano,
+                        jugadores: sala.jugadores.map(p => ({
+                            id: p.id, nombre: p.nombre, numCartas: p.mano.length, rol: p.rol
+                        }))
+                    });
+                }
             }
         });
         console.log("Intentando iniciar partida3")
         io.to(salaId).emit("turno_jugador", { turno: resultado.turnoInicial, esPrimero: true });
         console.log(`Partida iniciada en ${salaId}`);
+
+        const jugadaBot = sala.checkJuegaBot();
+        if(jugadaBot) {
+            setTimeout();
+        }
     });
 
     socket.on("lanzar_cartas", (data, callback) => {

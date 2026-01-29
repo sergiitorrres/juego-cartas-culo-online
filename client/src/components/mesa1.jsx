@@ -231,9 +231,17 @@ useEffect(() => {
       setSeleccionadas([]);
     })
 
-    socket.on("plinRealizado",(data) =>{
+    socket.on("plinRealizado",(data) => {
       setShowPlin(true)
       setTimeout(()=> setShowPlin(false),1200)
+    })
+
+    // === BOT ===
+
+    socket.on("jugador_reemplazado", (data) => {
+      rivales.forEach(r => {
+        r.id === data.jugadorId ? {...r, id: data.nuevoId, nombre: data.nombre} : r
+      })
     })
     
     // ***********************************
@@ -241,7 +249,8 @@ useEffect(() => {
     // ***********************************
     return () => { socket.off("ronda_iniciada") ;socket.off( "jugador_paso_notif"); socket.off("turno_jugador"); socket.off("error"); socket.off("jugada_valida");
       socket.off("jugador_termino"); socket.off("fin_ronda"); socket.off("fase_intercambio"); socket.off("pedir_cartas"); socket.off("dar_cartas"); 
-      socket.off("cartas_donadas"); socket.off("fase_intercambio_finalizada"); socket.off("mesa_limpia"); socket.off("jugador_unido"); socket.off("intercambio_incorrecto")
+      socket.off("cartas_donadas"); socket.off("fase_intercambio_finalizada"); socket.off("mesa_limpia"); socket.off("jugador_unido"); socket.off("intercambio_incorrecto");
+      socket.off("jugador_reemplazado");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerName, navigate, socket]);

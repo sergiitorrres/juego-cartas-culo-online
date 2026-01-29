@@ -96,6 +96,20 @@ class Sala {
         return this.mesa.cartasEnMesa.length === 0;
     }
 
+    checkJuegaBot() {
+        const jugador = this.jugadores[this.turnoActual];
+        if (!jugador.esBot) return null; // No es bot, nada que hacer
+
+        const jugada = jugador.jugar(this.mesa); // Tu función 'jugar' devuelve cartas o null si pasa
+        const pasa = !jugada || jugada.length === 0;
+
+        return {
+            pasa: pasa,
+            jugada: jugada
+        };
+    }
+
+
     jugadoresResetPass() {
         this.jugadores.forEach(j => j.haPasado = false);
     }
