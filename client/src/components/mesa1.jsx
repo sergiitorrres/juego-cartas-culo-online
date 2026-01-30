@@ -239,10 +239,14 @@ useEffect(() => {
     // === BOT ===
 
     socket.on("jugador_reemplazado", (data) => {
-      rivales.forEach(r => {
-        r.id === data.jugadorId ? {...r, id: data.nuevoId, nombre: data.nombre} : r
-      })
-    })
+      setRivales(prevRiv =>
+      prevRiv.map(r =>
+        r.id === data.jugadorId
+          ? { ...r, id: data.nuevoId, nombre: data.nombre }
+          : r
+        )
+      );
+    });
     
     // ***********************************
     //  ======= CIERRE DE SOCKETS =======

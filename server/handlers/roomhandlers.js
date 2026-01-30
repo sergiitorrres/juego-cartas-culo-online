@@ -179,8 +179,10 @@ module.exports = (io, socket) => {
                 const jugadorHumano = partida.jugadores[index];
 
                 // Crear un bot para reemplazar
+                console.log("Vamos a crear bot")
                 const Bot = require('../game/bot');
                 const bot = new Bot(jugadorHumano.nombre + " (Bot)");
+                console.log("Bot creado, id: " + bot.id);
 
                 bot.mano = jugadorHumano.mano; // Copiar cartas
                 bot.rol = jugadorHumano.rol;
@@ -189,6 +191,7 @@ module.exports = (io, socket) => {
 
                 // Reemplazar jugador en la lista
                 partida.jugadores[index] = bot;
+                console.log("Bot reemplaza humano")
 
                 // Si quieres notificar al resto:
                 io.to(salaId).emit("jugador_reemplazado", {
@@ -197,6 +200,7 @@ module.exports = (io, socket) => {
                     nombre: bot.nombre
                     // Una imagen del bot??
                 });
+                console.log("Info de bot a cliente")
             }
         }
 

@@ -103,16 +103,6 @@ class Sala {
         const jugada = jugador.jugar(this.mesa); // Tu función 'jugar' devuelve cartas o null si pasa
         const pasa = !jugada || jugada.length === 0;
 
-        if(pasa) {
-            jugador.haPasado = true;
-        } else {
-
-            let idsCartasJugadas = []
-            jugada.forEach(c => {
-                idsCartasJugadas.push(c.id)
-            })
-            jugador.mano = jugador.mano.filter(c => !idsCartasJugadas.includes(c.id));
-        }
 
         return {
             pasa: pasa,
@@ -149,11 +139,13 @@ class Sala {
             instrucciones.push({
                 socketId: culo.id,
                 evento: "pedir_cartas",
+                esBot: culo.esBot,
                 data: { rol: constantes.ROLES.CULO, cantidad: 2, forzado: true, destino: constantes.ROLES.PRESIDENTE }
             });
             instrucciones.push({
                 socketId: presidente.id,
                 evento: "pedir_cartas",
+                esBot: presidente.sesBot,
                 data: { rol: constantes.ROLES.PRESIDENTE, cantidad: 2, forzado: false, destino: constantes.ROLES.CULO }
             });
             this.intercambiosPendientes.push(culo.id);
@@ -164,11 +156,13 @@ class Sala {
             instrucciones.push({
                 socketId: viceCulo.id,
                 evento: "pedir_cartas",
+                esBot: viceCulo.esBot,
                 data: { rol: constantes.ROLES.VICE_CULO, cantidad: 1, forzado: true, destino: constantes.ROLES.VICE_PRESIDENTE }
             });
             instrucciones.push({
                 socketId: vicePresi.id,
                 evento: "pedir_cartas",
+                esBot: vicePresi.esBot,
                 data: { rol: constantes.ROLES.VICE_PRESIDENTE, cantidad: 1, forzado: false, destino: constantes.ROLES.VICE_CULO }
             });
             this.intercambiosPendientes.push(viceCulo.id);
@@ -176,6 +170,20 @@ class Sala {
         }
 
         return { tipo: "intercambio_activo", instrucciones };
+    }
+
+    intercambioBot(idBot, rol) {
+        let bot = null;
+        for(var i = 0; i < this.jugadores.length; i++) {
+            if(this.jugadores[i].id === idBot) {
+                bot = this.jugadores[i];
+            }
+        }
+
+        if(!bot) return;
+
+        return bot.darCartas(rol);
+        
     }
 
     realizarIntercambio(clientId, cartasAEnviar) {
@@ -242,8 +250,10 @@ class Sala {
             ok: true,
             interDone: interDone,
             jugador1: jugadorEnvia.id,
+            j1esBot: jugadorEnvia.esBot,
             cartasParaJ1: cartasFromJD,
             jugador2: jugadorDestino.id,
+            j2esBot: jugadorDestino.esBot,
             cartasParaJ2: cartasAEnviar,
             faseTerminada: this.intercambiosPendientes.length === 0
         };

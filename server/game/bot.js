@@ -1,4 +1,5 @@
 // Bot.js
+const { ROLES } = require("./constantes");
 const Jugador = require("./jugador");
 class Bot extends Jugador {
     constructor(nombre) {
@@ -7,33 +8,38 @@ class Bot extends Jugador {
         this.esBot = true;
         this.vista = null;
         this.tengo2Oros = false;
-        verMano()
     }
 
     // Función que decide qué carta tirar
     jugar(mesa) {
-        if(mesa.cantidad === -1) {
+        this.verMano()
+
+        //console.log("Vista de Bot: " + this.vista)
+
+        if(mesa.cartasEnMesa.length === 0) {
             for(var i = this.vista.length - 1; i >= 0; i--) {
                 if(this.vista[i].length > 0) {
                     var fuerza = this.vista[i][0];
-                    var cantidad = i + 1;
-                    this.getCartas(fuerza , cantidad);
+                    return this.getCartas(fuerza, i + 1);
                 }
             }
-
-
         }
 
         let jugada = []
 
         if(this.vista[mesa.cantidad - 1].length !== 0){
-            var fuerza = mesa.fuerzaActual;
+            var fuerza = -1;
             var cantidad = mesa.cantidad;
+            var cont = 0;
+            while(fuerza < mesa.fuerzaActual && this.vista[cantidad - 1].length > cont) {
+                fuerza = this.vista[cantidad - 1][cont];
+                cont++;
+            }
+
+            if(fuerza < mesa.fuerzaActual) {return [];}
             jugada = this.getCartas(fuerza, cantidad);
             
         }else if(this.tengo2Oros){
-            jugada = this.getCartas
-            
             for(var i = 0; i < this.mano.length; i++){
                 if(this.mano[i].fuerza === 11 && this.mano[i].palo === 'oros'){
                     jugada = [this.mano[i]]
@@ -43,6 +49,7 @@ class Bot extends Jugador {
             }
         }
 
+        //console.log("Jugada bot " + this.nombre + ": " + jugada.map(c => `${c.valor} de ${c.palo}`))
         return jugada;
     }
     
@@ -78,12 +85,50 @@ class Bot extends Jugador {
             }
         }
 
-        const idx = this.vista[cantidad - 1].indexOf(fuerza);
-        this.vista = this.vista[cantidad - 1].splice(idx, 1);
-
-        return cartas.length === cantidad ? cartas : null;
+        return cartas.length === cantidad ? cartas : [];
     }
 
-}
 
+
+    darCartas (rol){
+        let elegidasBuenas = [];
+        this.verMano();
+        if(this.tengo2Oros){
+            var i = 0;
+            while(i < this.mano.length){
+                if(this.mano[i].valor === 2 && this.mano[i].palo === 'oros'){
+                    if(i === 0){
+                        elegidasBuenas = [this.mano[i], this.mano[i+1]]
+                    }else{
+                        elegidasBuenas = [this.mano[i], this.mano[0]]
+                    }
+                }
+                i++;
+            }
+        }else{
+            elegidasBuenas = [this.mano[0], this.mano[1]];
+        }
+       
+        let elegidasMalas = [this.mano[this.mano.length - 2],this.mano[this.mano.length - 1]]
+
+        switch (rol){
+            case ROLES.CULO:
+                return elegidasBuenas;
+                break;
+            case ROLES.VICE_CULO:
+                return elegidasBuenas[0];
+                break;
+            case ROLES.VICE_PRESIDENTE:
+                return elegidasMalas[1];
+                break;
+            case ROLES.PRESIDENTE:
+                return elegidasMalas;
+                break;
+
+            default: 
+            break;
+        }
+        
+    }
+}
 module.exports = Bot;

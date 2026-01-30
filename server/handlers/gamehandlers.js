@@ -42,116 +42,7 @@ module.exports = (io, socket) => {
         const salaId = socket.data.salaId;
         const sala = rooms[salaId]
 
-        if(!sala || !sala.checkIfTurn(socket.id)) {
-            return socket.emit("error", {mensaje: "No es tu turno"})
-        }
-
-        const mesa = sala.mesa
-        const jugador = sala.jugadores.find(j => j.id === socket.id);
-
-        if (jugador.haPasado) {
-            return socket.emit("error", { mensaje: "Has pasado turno, debes esperar a que se limpie la mesa" });
-        }
-
-        if (cartasJugadas.length === 0) return;
-
-        const esDosDeOros = (cartasJugadas.length === 1 && cartasJugadas[0].palo === 'oros' && cartasJugadas[0].valor === 2);
-        let limpiaMesa = esDosDeOros;
-
-        if(!limpiaMesa && mesa.cartasEnMesa.length > 0) {
-            if (cartasJugadas.length !== mesa.cantidad) {
-                return socket.emit("error", { mensaje: `Debes tirar ${mesa.cantidad} cartas` });
-            }
-            if (cartasJugadas[0].fuerza < mesa.fuerzaActual) {
-                return socket.emit("error", { mensaje: "Tus cartas son muy bajas" });
-            }
-        }
-
-        // Comprobar que todas tienen misma fuerza
-        let f = cartasJugadas[0].fuerza
-        if (!cartasJugadas.every(c => c.fuerza === f)) {
-            return socket.emit("error", { mensaje: "Las cartas deben ser del mismo valor" });
-        }
-        
-        let plin = (!limpiaMesa && mesa.cartasEnMesa.length > 0 && mesa.fuerzaActual === f);
-        if(plin){
-            io.to(salaId).emit("plinRealizado", { 
-            jugadorId: socket.id, 
-            cartas: cartasJugadas
-        });
-        }
-        
-        mesa.setFuerzaActual(f);
-        mesa.setCartas(cartasJugadas);
-        mesa.setCantidad(cartasJugadas.length);
-        mesa.setUltimoJugador(jugador);
-        
-        let idsCartasJugadas = []
-        cartasJugadas.forEach(c => {
-            idsCartasJugadas.push(c.id)
-        })
-        
-        jugador.mano = jugador.mano.filter(c => !idsCartasJugadas.includes(c.id));
-
-        // Avisar a todos
-        io.to(salaId).emit("jugada_valida", { 
-            jugadorId: socket.id, 
-            cartas: cartasJugadas
-        });
-
-        // Si el jugador se queda sin cartas
-        if (jugador.mano.length === 0) {
-            sala.posiciones = (sala.posiciones || 0) + 1;
-            jugador.posicionFinal = sala.posiciones;
-
-            io.to(salaId).emit("jugador_termino", { 
-                jugadorId: socket.id, 
-                posicion: jugador.posicionFinal 
-            });
-
-            // Verificar si acaba la ronda
-            const activos = sala.jugadores.filter(j => j.mano.length > 0);
-            if (activos.length <= 1) {
-                finalizarRonda(sala, io, salaId);
-                return;
-            }
-            limpiaMesa = true;
-        }
-
-        // Si hay que limpiar mesa
-        if (limpiaMesa) {
-            mesa.reset();
-            sala.jugadoresResetPass();
-            plin = false;
-            io.to(salaId).emit("mesa_limpia", { motivo: esDosDeOros ? "2 de Oros" : "Jugador terminó" });
-            
-            // Si tiro 2 de oros y sigue jugando, repite turno
-            if (esDosDeOros && jugador.mano.length > 0) {
-                io.to(salaId).emit("turno_jugador", { turno: jugador.id, esPrimero: limpiaMesa});
-
-                ejecutarBot(io, sala, salaId)
-                return;
-            }
-        }
-
-        let nextJ = sala.nextJugador();
-
-        if (plin && nextJ) {
-            nextJ = sala.nextJugador(); 
-        }
-
-        // Si da la vuelta completa y le toca al mismo que tiro la ultima carta -> Limpia mesa
-        if (mesa.ultimoJugador && nextJ && nextJ.id === mesa.ultimoJugador.id) {
-            mesa.reset();
-            sala.jugadoresResetPass();
-            io.to(salaId).emit("mesa_limpia", { motivo: "Nadie ha tirado cartas" });
-        }
-
-        if(nextJ) { 
-            io.to(salaId).emit("turno_jugador", { turno: nextJ.id, esPrimero: limpiaMesa });
-            
-            ejecutarBot(io, sala, salaId)
-        }
+        lanzaCarta(io, sala, salaId, cartasJugadas, socket.id)
     });
 
 
@@ -167,21 +58,10 @@ module.exports = (io, socket) => {
             return socket.emit("error", {mensaje: "No puedes saktar en el primer turno"})
         }
 
-        const jugador = sala.jugadores.find(j => j.id === socket.id);
-        jugador.setHaPasado(true);
-        io.to(salaId).emit("jugador_paso_notif", {jugadorId: socket.id})
 
-        let nextJ = sala.nextJugador()
-        const mesa = sala.mesa
+        accionPasar(salaId, sala, io, socket.id);
 
-        if(mesa.ultimoJugador && nextJ && nextJ.id === mesa.ultimoJugador.id) {
-            mesa.reset()
-            sala.jugadoresResetPass()
-            io.to(salaId).emit("mesa_limpia", {motivo: "Nadie ha tirado cartas"})
-        }
-        io.to(salaId).emit("turno_jugador", {turno: nextJ.id, esPrimero: false})
-
-        ejecutarBot(io, sala, salaId)
+        
     });
 
     socket.on("dar_cartas", (data, callback) => {
@@ -196,30 +76,152 @@ module.exports = (io, socket) => {
             socket.emit("error", { error: "Sala no encontrada o no válida" });
             return;
         }
-        
-        const info = sala.realizarIntercambio(socket.id, cartas)
-        if(!info.ok) {
-            io.to(socket.id).emit("intercambio_incorrecto", {cartas: cartas})
-            return;
-        }
 
-        if(info.interDone) {
+        cambio(io,sala,salaId,cartas,socket.id);
+    });
+
+}
+
+function cambio (io, sala, salaId, cartas, jugadorId){
+    const info = sala.realizarIntercambio(jugadorId, cartas)
+    if(!info.ok) {
+        io.to(jugadorId).emit("intercambio_incorrecto", {cartas: cartas})
+        return;
+    }
+
+    if(info.interDone) {
+        if(!info.j1esBot) {
             io.to(info.jugador1).emit("cartas_donadas", {cartas: info.cartasParaJ1, from: info.jugador2})
-
+        }
+        if(!info.j2esBot) {
             io.to(info.jugador2).emit("cartas_donadas", {cartas: info.cartasParaJ2, from: info.jugador1})
         }
+    }
 
-        if(info.faseTerminada) {
-            io.to(salaId).emit("fase_intercambio_finalizada", {});
-            const idTurno = sala.jugadores[sala.turnoActual].id;
-            io.to(salaId).emit("turno_jugador", { turno: idTurno, esPrimero: true });
+    if(info.faseTerminada) {
+        io.to(salaId).emit("fase_intercambio_finalizada", {});
+        const idTurno = sala.jugadores[sala.turnoActual].id;
+        io.to(salaId).emit("turno_jugador", { turno: idTurno, esPrimero: true });
+
+        ejecutarBot(io, sala, salaId)
+        // Por si acaso
+        sala.intercambiosPendientes = []
+        sala.mapa = new Map()
+    }
+};
+
+
+function lanzaCarta(io, sala, salaId, cartasJugadas, idJugador) {
+    if(!sala || !sala.checkIfTurn(idJugador)) {
+        return io.to(idJugador).emit("error", {mensaje: "No es tu turno"})
+    }
+
+    const mesa = sala.mesa
+    const jugador = sala.jugadores.find(j => j.id === idJugador);
+
+    if (jugador.haPasado) {
+        return io.to(idJugador).emit("error", { mensaje: "Has pasado turno, debes esperar a que se limpie la mesa" });
+    }
+
+    if (cartasJugadas.length === 0) return;
+
+    const esDosDeOros = (cartasJugadas.length === 1 && cartasJugadas[0].palo === 'oros' && cartasJugadas[0].valor === 2);
+    let limpiaMesa = esDosDeOros;
+
+    if(!limpiaMesa && mesa.cartasEnMesa.length > 0) {
+        if (cartasJugadas.length !== mesa.cantidad) {
+            return io.to(idJugador).emit("error", { mensaje: `Debes tirar ${mesa.cantidad} cartas` });
+        }
+        if (cartasJugadas[0].fuerza < mesa.fuerzaActual) {
+            return io.to(idJugador).emit("error", { mensaje: "Tus cartas son muy bajas" });
+        }
+    }
+
+    // Comprobar que todas tienen misma fuerza
+    let f = cartasJugadas[0].fuerza
+    if (!cartasJugadas.every(c => c.fuerza === f)) {
+        return io.to(idJugador).emit("error", { mensaje: "Las cartas deben ser del mismo valor" });
+    }
+    
+    let plin = (!limpiaMesa && mesa.cartasEnMesa.length > 0 && mesa.fuerzaActual === f);
+    if(plin){
+        io.to(salaId).emit("plinRealizado", { 
+            jugadorId: idJugador, 
+            cartas: cartasJugadas
+        });
+    }
+    
+    mesa.setFuerzaActual(f);
+    mesa.setCartas(cartasJugadas);
+    mesa.setCantidad(cartasJugadas.length);
+    mesa.setUltimoJugador(jugador);
+    
+    let idsCartasJugadas = []
+    cartasJugadas.forEach(c => {
+        idsCartasJugadas.push(c.id)
+    })
+    
+    jugador.mano = jugador.mano.filter(c => !idsCartasJugadas.includes(c.id));
+
+    // Avisar a todos
+    io.to(salaId).emit("jugada_valida", { 
+        jugadorId: idJugador, 
+        cartas: cartasJugadas
+    });
+
+    // Si el jugador se queda sin cartas
+    if (jugador.mano.length === 0) {
+        sala.posiciones = (sala.posiciones || 0) + 1;
+        jugador.posicionFinal = sala.posiciones;
+
+        io.to(salaId).emit("jugador_termino", { 
+            jugadorId: idJugador, 
+            posicion: jugador.posicionFinal 
+        });
+
+        // Verificar si acaba la ronda
+        const activos = sala.jugadores.filter(j => j.mano.length > 0);
+        if (activos.length <= 1) {
+            finalizarRonda(sala, io, salaId);
+            return;
+        }
+        limpiaMesa = true;
+    }
+
+    // Si hay que limpiar mesa
+    if (limpiaMesa) {
+        mesa.reset();
+        sala.jugadoresResetPass();
+        plin = false;
+        io.to(salaId).emit("mesa_limpia", { motivo: esDosDeOros ? "2 de Oros" : "Jugador terminó" });
+        
+        // Si tiro 2 de oros y sigue jugando, repite turno
+        if (esDosDeOros && jugador.mano.length > 0) {
+            io.to(salaId).emit("turno_jugador", { turno: jugador.id, esPrimero: limpiaMesa});
 
             ejecutarBot(io, sala, salaId)
-            // Por si acaso
-            sala.intercambiosPendientes = []
-            sala.mapa = new Map()
+            return;
         }
-    });
+    }
+
+    let nextJ = sala.nextJugador();
+
+    if (plin && nextJ) {
+        nextJ = sala.nextJugador(); 
+    }
+
+    // Si da la vuelta completa y le toca al mismo que tiro la ultima carta -> Limpia mesa
+    if (mesa.ultimoJugador && nextJ && nextJ.id === mesa.ultimoJugador.id) {
+        mesa.reset();
+        sala.jugadoresResetPass();
+        io.to(salaId).emit("mesa_limpia", { motivo: "Nadie ha tirado cartas" });
+    }
+
+    if(nextJ) { 
+        io.to(salaId).emit("turno_jugador", { turno: nextJ.id, esPrimero: limpiaMesa });
+        
+        ejecutarBot(io, sala, salaId)
+    }
 }
 
 function ejecutarBot(io, sala, salaId) {
@@ -227,16 +229,30 @@ function ejecutarBot(io, sala, salaId) {
     if(jugadaBot) {
         setTimeout(() => {
             if(jugadaBot.pasa) {
-                io.to(salaId).emit("jugador_paso_notif", {jugadorId: jugadaBot.id});
-
+                accionPasar(salaId, sala, io, jugadaBot.id);
             } else {
-                io.to(salaId).emit("jugada_valida", { 
-                    jugadorId: jugadaBot.id, 
-                    cartas: cartasJugadas
-                });
+                lanzaCarta(io, sala, salaId, jugadaBot.jugada, jugadaBot.id)
             }
         }, 1000);
     }
+}
+
+function accionPasar (salaId, sala, io, idJugador){
+    const jugador = sala.jugadores.find(j => j.id === idJugador);
+        jugador.setHaPasado(true);
+        io.to(salaId).emit("jugador_paso_notif", {jugadorId: idJugador})
+
+        let nextJ = sala.nextJugador()
+        const mesa = sala.mesa
+
+        if(mesa.ultimoJugador && nextJ && nextJ.id === mesa.ultimoJugador.id) {
+            mesa.reset()
+            sala.jugadoresResetPass()
+            io.to(salaId).emit("mesa_limpia", {motivo: "Nadie ha tirado cartas"})
+        }
+        io.to(salaId).emit("turno_jugador", {turno: nextJ.id, esPrimero: false})
+
+        ejecutarBot(io, sala, salaId)
 }
 
 // Fin de ronda e inicio de la siguiente
@@ -288,15 +304,20 @@ function finalizarRonda(sala, io, salaId) {
         if (datosIntercambio.tipo === "intercambio_activo") {
             io.to(salaId).emit("fase_intercambio", {});
             datosIntercambio.instrucciones.forEach(instruccion => {
-                const s = io.sockets.sockets.get(instruccion.socketId);
-                if (s) s.emit(instruccion.evento, instruccion.data);
+                if(instruccion.esBot) {
+                    const cartas = sala.intercambioBot(instruccion.socketId, instruccion.data.rol);
+                    cambio(io, sala, salaId, cartas, instruccion.socketId) // en este caso socketId no es un socket
+                } else {
+                    const s = io.sockets.sockets.get(instruccion.socketId);
+                    if (s) s.emit(instruccion.evento, instruccion.data);
+                }
             });
         } else {
             const idTurno = sala.jugadores[sala.turnoActual].id;
             io.to(salaId).emit("turno_jugador", { turno: idTurno, esPrimero: true });
 
             ejecutarBot(io, sala, salaId)
-    }
+        }
     }, 5000);
 
 
