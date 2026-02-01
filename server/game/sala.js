@@ -2,9 +2,13 @@ const constantes = require("./constantes");
 const Jugador = require("./jugador");
 const Mesa = require("./mesa");
 const Baraja = require("./baraja");
+const Bot = require("./bot");
 
-class Sala {
+const EventEmitter = require("events");
+
+class Sala extends EventEmitter {
     constructor(id, config,privacidad) {
+        super(); // Por los eventos
         this.id = id
         this.estado = constantes?.ESTADOS?.LOBBY || "LOBBY"
         this.ronda = 0
@@ -38,7 +42,18 @@ class Sala {
     }
 
     iniciar_partida(){
-        if (this.jugadores.length < 4) return {error : "Faltan jugadores"};
+        const botNames = ["Bacon", "Huevo", "Patatas"];
+
+        // Copia y baraja
+        const nombres = [...botNames].sort(() => Math.random() - 0.5);
+
+        let i = 0;
+        while (this.jugadores.length < this.maxJugadores) {
+            const nombre = nombres[i % nombres.length];
+            this.jugadores.push(new Bot(`${nombre} (Bot)`));
+            i++;
+        }
+
         if (this.estado !== constantes.ESTADOS.LOBBY) return { error: "Ya ha empezado" };
 
         this.estado = constantes.ESTADOS.REPARTIENDO;
@@ -145,7 +160,7 @@ class Sala {
             instrucciones.push({
                 socketId: presidente.id,
                 evento: "pedir_cartas",
-                esBot: presidente.sesBot,
+                esBot: presidente.esBot,
                 data: { rol: constantes.ROLES.PRESIDENTE, cantidad: 2, forzado: false, destino: constantes.ROLES.CULO }
             });
             this.intercambiosPendientes.push(culo.id);
@@ -245,6 +260,7 @@ class Sala {
         }
 
         this.intercambiosPendientes = this.intercambiosPendientes.filter(id => id !== clientId);
+
 
         return {
             ok: true,

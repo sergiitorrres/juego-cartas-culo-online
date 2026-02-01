@@ -88,8 +88,6 @@ class Bot extends Jugador {
         return cartas.length === cantidad ? cartas : [];
     }
 
-
-
     darCartas (rol){
         let elegidasBuenas = [];
         this.verMano();
@@ -113,16 +111,16 @@ class Bot extends Jugador {
 
         switch (rol){
             case ROLES.CULO:
-                return elegidasBuenas;
+                return [...elegidasBuenas];
                 break;
             case ROLES.VICE_CULO:
-                return elegidasBuenas[0];
+                return [elegidasBuenas[0]];
                 break;
             case ROLES.VICE_PRESIDENTE:
-                return elegidasMalas[1];
+                return [elegidasMalas[1]];
                 break;
             case ROLES.PRESIDENTE:
-                return elegidasMalas;
+                return [...elegidasMalas];
                 break;
 
             default: 

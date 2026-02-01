@@ -10,6 +10,11 @@ module.exports = (io, socket) => {
         console.log("Intentando iniciar partida1")
         if (!sala) return;
 
+        sala.on("turno_de_bot", () => {
+            ejecutarBot(io, sala, salaId);
+        });
+
+
         const resultado = sala.iniciar_partida();
 
         if (resultado.error) {
@@ -73,7 +78,7 @@ module.exports = (io, socket) => {
         //console.log("rooms keys:", Object.keys(rooms));
 
         if (!sala) {
-            socket.emit("error", { error: "Sala no encontrada o no válida" });
+            socket.emit("error", { mensaje: "Sala no encontrada o no válida" });
             return;
         }
 
@@ -233,7 +238,7 @@ function ejecutarBot(io, sala, salaId) {
             } else {
                 lanzaCarta(io, sala, salaId, jugadaBot.jugada, jugadaBot.id)
             }
-        }, 1000);
+        }, 1500);
     }
 }
 
@@ -306,7 +311,9 @@ function finalizarRonda(sala, io, salaId) {
             datosIntercambio.instrucciones.forEach(instruccion => {
                 if(instruccion.esBot) {
                     const cartas = sala.intercambioBot(instruccion.socketId, instruccion.data.rol);
-                    cambio(io, sala, salaId, cartas, instruccion.socketId) // en este caso socketId no es un socket
+                    setTimeout(() => {
+                        cambio(io, sala, salaId, cartas, instruccion.socketId) // en este caso socketId no es un socket
+                    }, 5000);
                 } else {
                     const s = io.sockets.sockets.get(instruccion.socketId);
                     if (s) s.emit(instruccion.evento, instruccion.data);

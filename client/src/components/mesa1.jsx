@@ -95,7 +95,7 @@ useEffect(() => {
 
     socket.on("error",(data)=>{
       //MODIFICAR PARA QUE SE MANDE EL TEXTO DE TODOS LOS FALLOS
-      console.log(`Info error: ${data}`);
+      console.log(`Info error: ${data.mensaje}`);
       alert(`Error: ${data.mensaje}`);
     })
     
@@ -136,7 +136,9 @@ useEffect(() => {
         setUltimaJugada([]);
 
         limpiandoMesaRef.current = false;
-        procesarCola();
+        setTimeout(() => { // No procesar en mismo tick (Posible bug visual)
+          procesarCola();
+        }, 0);
       }, 1800);
 
       // Reset Ha Pasado
@@ -150,10 +152,13 @@ useEffect(() => {
       setTimeout(() => {
         setCartaMesa([]);
         setUltimoJugadorId(null);
+        setUltimaJugada([]);
 
         limpiandoMesaRef.current = false;
         setHacerBarrido(true);
-        procesarCola();
+        setTimeout(() => { // No procesar en mismo tick (Posible bug visual)
+          procesarCola();
+        }, 0);
       }, 1800);
 
       setUltimoJugadorId(null);
@@ -193,7 +198,7 @@ useEffect(() => {
 
             socket.emit("dar_cartas", { cartas: cartasDonadas });
 
-            return prevCartas.filter(c => !cartasDonadas.includes(c));
+            return prevCartas.filter(c => !cartasDonadas.some(d => d.id === c.id))
           });
 
         }, 5000);
@@ -336,7 +341,9 @@ useEffect(() => {
     // pequeño delay opcional para animación
     setTimeout(() => {
       procesandoRef.current = false;
-      procesarCola(); // por si hay más
+      setTimeout(() => { // No procesar en mismo tick (Posible bug visual)
+        procesarCola();
+      }, 0);
     }, 500);
   };
 
@@ -492,7 +499,7 @@ useEffect(() => {
         className={styles.botonInicioPartida}
         type="button"
         onClick={handlerIniciarPartida}
-        disabled={jugadoresLista.length < maxJugadores || jugadoresLista[0]?.id !== socket?.id}
+        disabled={jugadoresLista[0]?.id !== socket?.id}
       > 
         INICIAR PARTIDA 
       </button>

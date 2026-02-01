@@ -3,6 +3,7 @@
 const { rooms } = require("../store");
 const Sala = require("../game/sala");
 const { ESTADOS } = require("../game/constantes");
+const { func } = require("prop-types");
 
 const obtenerSalasPublicas = () => {
     
@@ -193,6 +194,13 @@ module.exports = (io, socket) => {
                 partida.jugadores[index] = bot;
                 console.log("Bot reemplaza humano")
 
+                // Comprobar si quedan jugadores vivos
+                if(!checkAlivePlayers(partida)) {
+                    delete rooms[salaId];
+                    console.log(`Sala ${salaId} eliminada (vacía)`);
+                    return;
+                }
+ 
                 // Si quieres notificar al resto:
                 io.to(salaId).emit("jugador_reemplazado", {
                     jugadorId: socket.id,
@@ -201,11 +209,20 @@ module.exports = (io, socket) => {
                     // Una imagen del bot??
                 });
                 console.log("Info de bot a cliente")
+
+                if(index === partida.turnoActual) {
+                    partida.emit("turno_de_bot");
+                }
             }
         }
 
         io.emit("salas_publicas", obtenerSalasPublicas());
     }
 
-    
+    function checkAlivePlayers(sala) {
+        if(sala.jugadores.length < 1) return false;
+        let res = false;
+        sala.jugadores.map(j => j.esBot ? {} : res = true)
+        return res;
+    }
 }
