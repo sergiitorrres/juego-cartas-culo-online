@@ -357,7 +357,7 @@ useEffect(() => {
     >
       {showPlin && <div className={styles.plinAnimacion}>¡PLIN!</div>}
 
-      {/* --- BOTÓN 1: SALIR (Esquina Superior Izquierda) --- */}
+      {/* --- BOTÓN 1: SALIR  --- */}
       <button
         className={styles.boton_pasar} 
         type="button"
@@ -377,7 +377,7 @@ useEffect(() => {
         ⏏ SALIR
       </button>
 
-      {/* --- BOTÓN 2: REGLAS (Esquina Superior Derecha - NUEVO) --- */}
+      {/* --- BOTÓN 2: REGLAS  --- */}
       <button
         className={styles.boton_pasar} 
         type="button"
@@ -385,9 +385,9 @@ useEffect(() => {
         style={{
             position: 'absolute',  
             top: '20px',           
-            right: '20px',  // A la derecha        
+            right: '20px',          
             zIndex: 100,           
-            backgroundColor: '#1976D2', // Azul informativo
+            backgroundColor: '#1976D2', 
             color: 'white', 
             borderColor: '#0D47A1',
             width: 'auto',         
@@ -397,7 +397,7 @@ useEffect(() => {
         📜 REGLAS
       </button>
       
-      {/* --- MODAL DE SALIDA (YA EXISTENTE) --- */}
+      {/* --- MODAL DE SALIDA  --- */}
       {mostrarModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalCaja}>
@@ -412,7 +412,7 @@ useEffect(() => {
         </div>
       )}
 
-      {/* --- MODAL DE REGLAS (NUEVO - CON CONTENIDO DEL DOCX) --- */}
+      {/* --- MODAL DE REGLAS  --- */}
       {mostrarReglas && (
         <div className={styles.modalOverlay} style={{zIndex: 200}}>
           <div className={styles.modalCaja} 
@@ -420,7 +420,7 @@ useEffect(() => {
                    width: '80%', 
                    maxWidth: '600px', 
                    maxHeight: '80vh', 
-                   overflowY: 'auto', // Scroll si es muy largo
+                   overflowY: 'auto', 
                    textAlign: 'left',
                    padding: '30px'
                }}>
@@ -430,40 +430,40 @@ useEffect(() => {
             <div style={{fontSize: '0.95rem', lineHeight: '1.5', color: '#444'}}>
                 
                 <h4 style={{color: '#c62828', marginTop: '15px'}}>1. El Objetivo</h4>
-                [cite_start]<p>El objetivo es deshacerte de todas tus cartas lo antes posible[cite: 2]. [cite_start]El orden en el que los jugadores terminan determina su rol para la siguiente partida[cite: 3].</p>
+                [cite_start]<p>El objetivo es deshacerte de todas tus cartas lo antes posible. [cite_start]El orden en el que los jugadores terminan determina su rol para la siguiente partida.</p>
 
                 <h4 style={{color: '#c62828', marginTop: '15px'}}>2. Jerarquía de las Cartas</h4>
                 <ul>
-                    [cite_start]<li><strong>La más baja:</strong> 3[cite: 6].</li>
-                    [cite_start]<li><strong>Orden ascendente:</strong> 4, 5, 6, 7, Sota, Caballo, Rey, As[cite: 7].</li>
-                    [cite_start]<li><strong>La más alta:</strong> 2 (El 2 de oros supera a cualquier combinación)[cite: 8].</li>
+                    [cite_start]<li><strong>La más baja:</strong> 3.</li>
+                    [cite_start]<li><strong>Orden ascendente:</strong> 4, 5, 6, 7, Sota, Caballo, Rey, As.</li>
+                    [cite_start]<li><strong>La más alta:</strong> 2 (El 2 de oros supera a cualquier combinación).</li>
                 </ul>
 
                 <h4 style={{color: '#c62828', marginTop: '15px'}}>3. Los Roles</h4>
                 <ul>
-                    [cite_start]<li>🥇 <strong>Presidente:</strong> El primero en acabar[cite: 11].</li>
-                    [cite_start]<li>🥈 <strong>Vicepresidente:</strong> El segundo[cite: 12].</li>
-                    [cite_start]<li>😐 <strong>Neutros:</strong> Los del medio[cite: 13].</li>
-                    [cite_start]<li>😟 <strong>Vice-Culo:</strong> El penúltimo[cite: 14].</li>
-                    [cite_start]<li>💩 <strong>Culo:</strong> El último[cite: 15].</li>
+                    [cite_start]<li>🥇 <strong>Presidente:</strong> El primero en acabar.</li>
+                    [cite_start]<li>🥈 <strong>Vicepresidente:</strong> El segundo.</li>
+                    [cite_start]<li>😐 <strong>Neutros:</strong> Los del medio.</li>
+                    [cite_start]<li>😟 <strong>Vice-Culo:</strong> El penúltimo.</li>
+                    [cite_start]<li>💩 <strong>Culo:</strong> El último.</li>
                 </ul>
 
                 <h4 style={{color: '#c62828', marginTop: '15px'}}>4. El Intercambio</h4>
-                [cite_start]<p>Al inicio de cada ronda (excepto la primera)[cite: 17]:</p>
+                [cite_start]<p>Al inicio de cada ronda (excepto la primera):</p>
                 <ul>
-                    [cite_start]<li><strong>El Culo</strong> entrega sus 2 mejores cartas al Presidente[cite: 18].</li>
-                    [cite_start]<li><strong>El Presidente</strong> entrega 2 cartas cualesquiera al Culo[cite: 19].</li>
-                    [cite_start]<li><strong>El Vice-Culo</strong> entrega su mejor carta al Vicepresidente[cite: 20].</li>
-                    [cite_start]<li><strong>El Vicepresidente</strong> entrega 1 carta cualquiera al Vice-Culo[cite: 21].</li>
+                    [cite_start]<li><strong>El Culo</strong> entrega sus 2 mejores cartas al Presidente.</li>
+                    [cite_start]<li><strong>El Presidente</strong> entrega 2 cartas cualesquiera al Culo.</li>
+                    [cite_start]<li><strong>El Vice-Culo</strong> entrega su mejor carta al Vicepresidente.</li>
+                    [cite_start]<li><strong>El Vicepresidente</strong> entrega 1 carta cualquiera al Vice-Culo.</li>
                 </ul>
 
                 <h4 style={{color: '#c62828', marginTop: '15px'}}>5. Dinámica</h4>
                 <ul>
-                    [cite_start]<li><strong>Inicio:</strong> Empieza el Culo (o el poseedor del 3 de oros en la primera partida)[cite: 24].</li>
-                    [cite_start]<li><strong>Tirar cartas:</strong> Debes superar o igualar el valor de la carta en mesa[cite: 25].</li>
-                    [cite_start]<li><strong>Salto de turno:</strong> Si tiras una carta de igual valor a la de la mesa, se salta al siguiente jugador[cite: 26].</li>
-                    [cite_start]<li><strong>Pasar:</strong> Si pasas, no puedes volver a jugar hasta que se limpie la mesa[cite: 28].</li>
-                    [cite_start]<li><strong>Limpiar mesa:</strong> Si todos pasan, gana la mano el último que tiró y empieza la siguiente ronda tirando lo que quiera[cite: 29, 30].</li>
+                    [cite_start]<li><strong>Inicio:</strong> Empieza el Culo (o el poseedor del 3 de oros en la primera partida).</li>
+                    [cite_start]<li><strong>Tirar cartas:</strong> Debes superar o igualar el valor de la carta en mesa.</li>
+                    [cite_start]<li><strong>Salto de turno:</strong> Si tiras una carta de igual valor a la de la mesa, se salta al siguiente jugador.</li>
+                    [cite_start]<li><strong>Pasar:</strong> Si pasas, no puedes volver a jugar hasta que se limpie la mesa.</li>
+                    [cite_start]<li><strong>Limpiar mesa:</strong> Si todos pasan, gana la mano el último que tiró y empieza la siguiente ronda tirando lo que quiera.</li>
                 </ul>
             </div>
 
