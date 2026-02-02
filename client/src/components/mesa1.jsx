@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 const Mesa = ({playerName, socket, numMaxJugadores}) => {
   const navigate = useNavigate();
   const [misCartas,setMisCartas] = useState([]);
+  const misCartasRef = useRef([]);
+
   const [rivales,setRivales] = useState([]);
   const [estado,setEstado] = useState(ESTADOS.LOBBY);
   const [turno,setTurno] = useState ();
@@ -30,8 +32,12 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
   const colaJugadasRef = useRef([]);   // Cola de jugadas pendientes
   const procesandoRef = useRef(false);
 
-useEffect(() => {
-    
+  useEffect(() => {
+    misCartasRef.current = misCartas;
+  }, [misCartas]);
+
+
+  useEffect(() => {
     window.history.pushState(null, null, window.location.pathname);
 
     const handlePopState = (event) => {
@@ -136,9 +142,9 @@ useEffect(() => {
         setUltimaJugada([]);
 
         limpiandoMesaRef.current = false;
-        setTimeout(() => { // No procesar en mismo tick (Posible bug visual)
+        setTimeout(() => { // No procesar en mismo tick (Posible bug visual?)
           procesarCola();
-        }, 0);
+        }, 5);
       }, 1800);
 
       // Reset Ha Pasado
@@ -156,9 +162,9 @@ useEffect(() => {
 
         limpiandoMesaRef.current = false;
         setHacerBarrido(true);
-        setTimeout(() => { // No procesar en mismo tick (Posible bug visual)
+        setTimeout(() => { // No procesar en mismo tick (Posible bug visual?)
           procesarCola();
-        }, 0);
+        }, 5);
       }, 1800);
 
       setUltimoJugadorId(null);
@@ -177,30 +183,26 @@ useEffect(() => {
 
       if(forzado) {
         setTimeout(() => {
-          setMisCartas(prevCartas => {
-            let cartasDonadas = [];
+          let cartasDonadas = [];
 
-            const indexOros2 = prevCartas.findIndex(c => c.id === "oros_2");
+          const indexOros2 = misCartasRef.current.findIndex(c => c.id === "oros_2");
 
-            if (indexOros2 !== -1) {
-              const oros2 = prevCartas[indexOros2];
-              cartasDonadas.push(oros2);
+          if (indexOros2 !== -1) {
+            const oros2 = misCartasRef.current[indexOros2];
+            cartasDonadas.push(oros2);
 
-              if (cant === 2) {
-                const mejorRestante = prevCartas.find(c => c.id !== "oros_2");
-                if (mejorRestante) {
-                  cartasDonadas.push(mejorRestante);
-                }
+            if (cant === 2) {
+              const mejorRestante = misCartasRef.current.find(c => c.id !== "oros_2");
+              if (mejorRestante) {
+                cartasDonadas.push(mejorRestante);
               }
-            } else {
-              cartasDonadas = prevCartas.slice(0, cant);
             }
+          } else {
+            cartasDonadas = misCartasRef.current.slice(0, cant);
+          }
 
-            socket.emit("dar_cartas", { cartas: cartasDonadas });
-
-            return prevCartas.filter(c => !cartasDonadas.some(d => d.id === c.id))
-          });
-
+          socket.emit("dar_cartas", { cartas: [...cartasDonadas]});
+          console.log("Cartas que dono: " + cartasDonadas.map(c => `${c.valor} de ${c.palo}`))
         }, 5000);
       }
     })
@@ -209,7 +211,7 @@ useEffect(() => {
       const from = data.from; // Para hacer animacion en el futuro
       const nuevasCartas = data.cartas
 
-      const idsCartasJugadas = []
+      let idsCartasJugadas = []
       nuevasCartas.forEach(c => {
           idsCartasJugadas.push(c.id)
       })
@@ -222,14 +224,12 @@ useEffect(() => {
       });
     })
 
-    socket.on("intercambio_incorrecto", (data) => {
-      const cartasPerdidas = data.cartas;
-      setMisCartas(prevCartas => {
-        let mano = [...prevCartas, ...cartasPerdidas];
-        mano = mano.sort((a, b) => b.fuerza - a.fuerza);
-        return mano;
-      })
-    })
+    socket.on("cartas_donadas_confirmadas", (data) => {
+      setMisCartas(prev =>
+        prev.filter(c => !data.cartas.some(dc => dc.id === c.id))
+      );
+    });
+
 
     socket.on("fase_intercambio_finalizada", (data) => {
       setEstado(ESTADOS.JUGANDO);
@@ -272,10 +272,11 @@ useEffect(() => {
   const sitios = ['izq', 'arriba-izq', 'arriba-centro', 'arriba-der', 'der'];
 
   const resetHaPasado = () => {
-    setRivales(prevRiv => prevRiv.map(rival => ({ ...rival, haPasado: false }))
-  );
+    setRivales(prevRiv =>
+      prevRiv.map(rival => ({ ...rival, haPasado: false }))
+    );
+  };
 
-  }
 
   const handlerconfirmarSalida = () => {
     // El usuario dijo SI
@@ -301,7 +302,7 @@ useEffect(() => {
 
   const handlerLanzarCarta = (indices) => {
     const setIndices = new Set(indices);
-    const cartasLanzadas = misCartas.filter((_, idx) => setIndices.has(idx));
+    const cartasLanzadas = misCartasRef.current.filter((_, idx) => setIndices.has(idx));
     socket.emit("lanzar_cartas", {cartas: cartasLanzadas});
   }
 
@@ -315,15 +316,9 @@ useEffect(() => {
   }
 
   const handlerDarCartas = (indices) => {
-    setMisCartas(prevCartas => {
-      const setIndices = new Set(indices);
-
-      const restantes = prevCartas.filter((_, idx) => !setIndices.has(idx));
-      const cartas_donadas = prevCartas.filter((_, idx) => setIndices.has(idx));
-
-      socket.emit("dar_cartas", { cartas: cartas_donadas });
-      return restantes;
-    });
+    const setIndices = new Set(indices);
+    const cartas_donadas = misCartasRef.current.filter((_, idx) => setIndices.has(idx));
+    socket.emit("dar_cartas", { cartas: cartas_donadas });
   };
 
   // === Funciones para la gestion de jugadas ===
@@ -341,9 +336,9 @@ useEffect(() => {
     // pequeño delay opcional para animación
     setTimeout(() => {
       procesandoRef.current = false;
-      setTimeout(() => { // No procesar en mismo tick (Posible bug visual)
+      setTimeout(() => { // No procesar en mismo tick (Posible bug visual?)
         procesarCola();
-      }, 0);
+      }, 5);
     }, 500);
   };
 

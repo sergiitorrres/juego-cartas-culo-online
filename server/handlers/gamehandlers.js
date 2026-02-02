@@ -78,11 +78,12 @@ module.exports = (io, socket) => {
         //console.log("rooms keys:", Object.keys(rooms));
 
         if (!sala) {
+            console.log("Por alguna razón entra aquí XXXX");
             socket.emit("error", { mensaje: "Sala no encontrada o no válida" });
             return;
         }
 
-        cambio(io,sala,salaId,cartas,socket.id);
+        cambio(io, sala, salaId, cartas, socket.id);
     });
 
 }
@@ -90,8 +91,12 @@ module.exports = (io, socket) => {
 function cambio (io, sala, salaId, cartas, jugadorId){
     const info = sala.realizarIntercambio(jugadorId, cartas)
     if(!info.ok) {
-        io.to(jugadorId).emit("intercambio_incorrecto", {cartas: cartas})
+        io.to(jugadorId).emit("error", {mensaje: info.error})
         return;
+    }
+
+    if(!info.j1esBot) {
+        io.to(jugadorId).emit("cartas_donadas_confirmadas", {cartas: cartas});
     }
 
     if(info.interDone) {
