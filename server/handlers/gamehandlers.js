@@ -29,7 +29,7 @@ module.exports = (io, socket) => {
                     s.emit("ronda_iniciada", { 
                         misCartas: j.mano,
                         jugadores: sala.jugadores.map(p => ({
-                            id: p.id, nombre: p.nombre, numCartas: p.mano.length, rol: p.rol
+                            id: p.id, nombre: p.nombre, numCartas: p.mano.length, rol: p.rol, puntos: p.puntuacion
                         }))
                     });
                 }
@@ -284,7 +284,12 @@ function finalizarRonda(sala, io, salaId) {
     }
 
     const infoRanking = sala.getRankings();
-    io.to(salaId).emit("fin_ronda", { ranking: infoRanking });
+    if(infoRanking.end) {
+        terminarSala(io, sala, salaId)
+        return;
+    } else {
+        io.to(salaId).emit("fin_ronda", { ranking: infoRanking.info });
+    }
 
     setTimeout(() => {  // En 5 segundos empiza la siguiente ronda
         sala.empezarRondaNueva();
@@ -297,7 +302,7 @@ function finalizarRonda(sala, io, salaId) {
                  socketJugador.emit("ronda_iniciada", { 
                      misCartas: j.mano,
                      jugadores: sala.jugadores.map(p => ({
-                        id: p.id, nombre: p.nombre, numCartas: p.mano.length, rol: p.rol
+                        id: p.id, nombre: p.nombre, numCartas: p.mano.length, rol: p.rol, puntos: p.puntuacion
                     }))
                  });
              }
@@ -331,6 +336,14 @@ function finalizarRonda(sala, io, salaId) {
             ejecutarBot(io, sala, salaId)
         }
     }, 5000);
+}
 
-
+function terminarSala(io, sala, salaId) {
+    ranking = sala.jugadores;
+    ranking.sort((a, b) => b.puntuacion - a.puntuacion);
+    io.to(salaId).emit("partida_finalizada", {
+        rankingFinal: ranking.map(p => ({
+            id: p.id, nombre: p.nombre, puntos: p.puntuacion
+        }))
+    })
 }

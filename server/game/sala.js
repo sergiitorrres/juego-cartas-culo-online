@@ -285,23 +285,34 @@ class Sala extends EventEmitter {
         ];
 
         let ptos = this.ronda === 1 ? 2 : this.ronda === 2 ? 4 : 6;
+        let end = false;
 
         rolesOrdenados.forEach((r, index) => {
             const jugador = this.jugadores.find(j => j.rol === r);
             if (!jugador) return;
 
+            if (r === constantes.ROLES.PRESIDENTE) {jugador.addPtos(ptos);}
+            else if (r === constantes.ROLES.VICE_PRESIDENTE) {jugador.addPtos(ptos / 2);}
+            else if (r === constantes.ROLES.VICE_CULO) {jugador.addPtos(-ptos / 2);}
+            else {jugador.addPtos(-ptos);}
+
+            if(!end && jugador.puntuacion >= 21) {
+                end = true;
+            }
+
             ranking.push({
                 jugadorId: jugador.id,
-                rol: r
+                rol: r,
+                ptos: jugador.puntuacion
             });
 
-            if (r === constantes.ROLES.PRESIDENTE) jugador.addPtos(ptos);
-            else if (r === constantes.ROLES.VICE_PRESIDENTE) jugador.addPtos(ptos / 2);
-            else if (r === constantes.ROLES.VICE_CULO) jugador.addPtos(-ptos / 2);
-            else jugador.addPtos(-ptos);
+            
         });
 
-        return ranking;
+        return {
+            info: ranking,
+            end: end
+        };
     }
 
 

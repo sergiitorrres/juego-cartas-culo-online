@@ -16,6 +16,7 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
   const [turno,setTurno] = useState ();
   const [cartasMesa, setCartaMesa] = useState([]);
   const [miRol, setMiRol] = useState();
+  const [misPuntos, setMisPuntos] = useState(0);
   const [seleccionadas, setSeleccionadas] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [jugadoresLista,setJugadoresLista] = useState([]);
@@ -26,6 +27,9 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
   const [hacerBarrido, setHacerBarrido] = useState(false);
   const [maxJugadores, setMaxJugadores] = useState(numMaxJugadores || 6);
   const [esPrimero, setEsPrimero] = useState(false);
+
+  const [rankingFinal, setRankingFinal] = useState([]);
+  const [mostrarRankingFinal, setMostrarRankingFinal] = useState(false);
 
 
   const limpiandoMesaRef = useRef(false);
@@ -124,12 +128,13 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
       data.ranking.forEach(entry => {
         setRivales(prev =>
           prev.map(r =>
-            r.id === entry.jugadorId ? { ...r, rol: entry.rol } : r
+            r.id === entry.jugadorId ? { ...r, rol: entry.rol, puntos: entry.ptos} : r
           )
         );
 
         if (entry.jugadorId === socket.id) {
           miRolNuevo = entry.rol;
+          setMisPuntos(entry.ptos);
         }
       });
 
@@ -252,6 +257,14 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
         )
       );
     });
+
+    // === Cierre Partida ===
+
+    socket.on("partida_finalizada", (data) => {
+      setRankingFinal(data.rankingFinal);
+      setMostrarRankingFinal(true);
+      setEstado(ESTADOS.FINALIZADA);
+    })
     
     // ***********************************
     //  ======= CIERRE DE SOCKETS =======
@@ -259,7 +272,7 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
     return () => { socket.off("ronda_iniciada") ;socket.off( "jugador_paso_notif"); socket.off("turno_jugador"); socket.off("error"); socket.off("jugada_valida");
       socket.off("jugador_termino"); socket.off("fin_ronda"); socket.off("fase_intercambio"); socket.off("pedir_cartas"); socket.off("dar_cartas"); 
       socket.off("cartas_donadas"); socket.off("fase_intercambio_finalizada"); socket.off("mesa_limpia"); socket.off("jugador_unido"); socket.off("intercambio_incorrecto");
-      socket.off("jugador_reemplazado");
+      socket.off("jugador_reemplazado"); socket.off("partida_finalizada");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerName, navigate, socket]);
@@ -339,7 +352,7 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
       setTimeout(() => { // No procesar en mismo tick (Posible bug visual?)
         procesarCola();
       }, 5);
-    }, 500);
+    }, 1000);
   };
 
   const aplicarJugada = (data) => {
@@ -404,101 +417,133 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
         </div>
       )}
 
-      {/* --- ZONA 1: OPONENTES (ARRIBA) --- */}
-{rivales.map((rival, index) => {
-  const esSuTurno = rival.id === turno;
-  const hizoUltimaJugada = rival.id === ultimoJugadorId;
-  return (<div 
-    key={rival.id} 
-    className={`${styles.jugador_rival} ${styles[sitios[index]]} ${rival.haPasado ? styles.haPasado : ''} ${esSuTurno ? styles.borde_turno_verde : ''} ${hizoUltimaJugada ? styles.brillo_ultima_jugada : ''}`}
-  >
-    <span className={styles.nombre_rival}>{rival.nombre}</span>
-    
-    {/* AVATAR PEQUEÑO (FIJADO POR CSS) */}
-    <img alt="avatar" className={styles.avatar} src="/assets/images/avatar-de-usuario.png" />
-    
-    {/* BARRA DE TIEMPO RIVAL */}
-    <div className={styles['timer-container']}>
-      <div 
-        className={styles['timer-bar']}
-        style={{ 
-          width: rival.id === turno ? '100%' : '0%', 
-          transition: rival.id === turno ? 'width 15s linear' : 'none' 
-        }}
-      ></div>
-    </div>
+      {mostrarRankingFinal && (
+      <div className={styles.modalOverlay}>
+        <div className={styles.modalCajaGrande}>
+          <h2>🏆 Ranking Final</h2>
 
-    <div className={styles.contadorDeCartas}>
-       <span>{rival.numCartas} 🎴</span>
-    </div>
-  </div>
-)})}
+          <div className={styles.rankingLista}>
+            {rankingFinal.map((jugador, index) => (
+              <div
+                key={jugador.id}
+                className={`
+                  ${styles.rankingFila}
+                  ${jugador.id === socket.id ? styles.miFila : ''}
+                `}
+              >
+                <span className={styles.posicion}>#{index + 1}</span>
+                <span className={styles.nombre}>{jugador.nombre}</span>
+                <span className={styles.puntos}> {jugador.puntos} pts</span>
+              </div>
+            ))}
+          </div>
+
+          <button
+            className={styles.botonVolver}
+            onClick={handlerconfirmarSalida}
+          >
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    )}
+
+
+    {/* --- ZONA 1: OPONENTES (ARRIBA) --- */}
+    {rivales.map((rival, index) => {
+      const esSuTurno = rival.id === turno;
+      const hizoUltimaJugada = rival.id === ultimoJugadorId;
+      return (<div 
+        key={rival.id} 
+        className={`${styles.jugador_rival} ${styles[sitios[index]]} ${rival.haPasado ? styles.haPasado : ''} ${esSuTurno ? styles.borde_turno_verde : ''} ${hizoUltimaJugada ? styles.brillo_ultima_jugada : ''}`}
+      >
+        <span className={styles.nombre_rival}>{rival.nombre}</span>
+        
+        {/* AVATAR PEQUEÑO (FIJADO POR CSS) */}
+        <img alt="avatar" className={styles.avatar} src="/assets/images/avatar-de-usuario.png" />
+        
+        {/* BARRA DE TIEMPO RIVAL */}
+        <div className={styles['timer-container']}>
+          <div 
+            className={styles['timer-bar']}
+            style={{ 
+              width: rival.id === turno ? '100%' : '0%', 
+              transition: rival.id === turno ? 'width 15s linear' : 'none' 
+            }}
+          ></div>
+        </div>
+
+        <div className={styles.contadorDeCartas}>
+          <span>{rival.numCartas} 🎴 — ({rival.puntos}) pts</span>
+        </div>
+      </div>
+    )})}
 
       
 
 
       {/* --- ZONA 2: CENTRO DE LA MESA --- */}
-<div className={styles['table-center']}>
+    <div className={styles['table-center']}>
   
-  {/* 1. LOBBY: Se renderiza de forma independiente para que no lo afecte el tamaño de la pila */}
-  {estado === ESTADOS.LOBBY && (
-    <div className={styles.contenedorLobby}>
-      <h3>Esperando jugadores ({jugadoresLista.length}/{maxJugadores})</h3>
-      <div className={styles.listaEspera}>
-        {jugadoresLista.map(r => (
-          <div key={r.id} className={styles.fichaEspera}>
-            {r.nombre} {r.id === socket.id && " (Tú)"}
-          </div>
-        ))}
-        {/* Pintamos los huecos vacíos */}
-        {[...Array(huecosDisponibles)].map((_, i) => (
-          <div key={`hueco-${i}`} className={styles.fichaHueco}>Esperando...</div>
-        ))}
-      </div>
-    </div>
-  )}
-
-  {/* 2. PILA DE CARTAS: Ahora es un contenedor absoluto para no mover al Lobby ni a los botones */}
-  {/* --- BUSCA TU ZONA DE LA PILA CENTRAL --- */}
-<div className={styles['pila-central']}>
-  <AnimatePresence>
-    {cartasMesa.map((carta, index) => (
-      <motion.img
-        key={`${carta.id}-${index}`}
-        alt={carta.id}
-        src={`/assets/images/cartas/${carta.id}.png`}
-        className={styles.cartaMesaAcumulada}
-
-        initial={{ y: 250, opacity: 0, scale: 0.6 }}
-        animate={{
-          y: 0,           // Las mantenemos en la misma línea horizontal
-          x: index * 35,  // <--- CAMBIO CLAVE: Aumentamos la separación horizontal.
-                          // Ajusta el valor '35' para más o menos separación.
-          opacity: 1,
-          scale: 1,
-          rotate: 0       // Quitamos la rotación para que se vean alineadas
-        }}
-        exit={hacerBarrido ? { x: 800, opacity: 0 } : { opacity: 0, transition: { duration: 0 } }}
-
-        transition={{ type: "spring", stiffness: 250, damping: 20 }}
-
-        style={{ zIndex: index }}
-      />
-    ))}
-  </AnimatePresence>
-</div>
-  {/* 3. CONTROLES: Botones de acción */}
-  <div className={styles.controles_centro}>
+    {/* 1. LOBBY: Se renderiza de forma independiente para que no lo afecte el tamaño de la pila */}
     {estado === ESTADOS.LOBBY && (
-      <button
-        className={styles.botonInicioPartida}
-        type="button"
-        onClick={handlerIniciarPartida}
-        disabled={jugadoresLista[0]?.id !== socket?.id}
-      > 
-        INICIAR PARTIDA 
-      </button>
+      <div className={styles.contenedorLobby}>
+        <h3>Esperando jugadores ({jugadoresLista.length}/{maxJugadores})</h3>
+        <div className={styles.listaEspera}>
+          {jugadoresLista.map(r => (
+            <div key={r.id} className={styles.fichaEspera}>
+              {r.nombre} {r.id === socket.id && " (Tú)"}
+            </div>
+          ))}
+          {/* Pintamos los huecos vacíos */}
+          {[...Array(huecosDisponibles)].map((_, i) => (
+            <div key={`hueco-${i}`} className={styles.fichaHueco}>Esperando...</div>
+          ))}
+        </div>
+      </div>
     )}
+
+    {/* 2. PILA DE CARTAS: Ahora es un contenedor absoluto para no mover al Lobby ni a los botones */}
+    {/* --- BUSCA TU ZONA DE LA PILA CENTRAL --- */}
+  <div className={styles['pila-central']}>
+    <AnimatePresence>
+      {cartasMesa.map((carta, index) => (
+        <motion.img
+          key={`${carta.id}-${index}`}
+          alt={carta.id}
+          src={`/assets/images/cartas/${carta.id}.png`}
+          className={styles.cartaMesaAcumulada}
+
+          initial={{ y: 250, opacity: 0, scale: 0.6 }}
+          animate={{
+            y: 0,           // Las mantenemos en la misma línea horizontal
+            x: index * 35,  // <--- CAMBIO CLAVE: Aumentamos la separación horizontal.
+                            // Ajusta el valor '35' para más o menos separación.
+            opacity: 1,
+            scale: 1,
+            rotate: 0       // Quitamos la rotación para que se vean alineadas
+          }}
+          exit={hacerBarrido ? { x: 800, opacity: 0 } : { opacity: 0, transition: { duration: 0 } }}
+
+          transition={{ type: "spring", stiffness: 250, damping: 20 }}
+
+          style={{ zIndex: index }}
+        />
+      ))}
+    </AnimatePresence>
+  </div>
+    {/* 3. CONTROLES: Botones de acción */}
+    <div className={styles.controles_centro}>
+      {estado === ESTADOS.LOBBY && (
+        <button
+          className={styles.botonInicioPartida}
+          type="button"
+          onClick={handlerIniciarPartida}
+          disabled={jugadoresLista[0]?.id !== socket?.id}
+        > 
+          INICIAR PARTIDA 
+        </button>
+      )}
 
     {estado === ESTADOS.JUGANDO && (
       <button
@@ -559,7 +604,7 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
          <div className={styles.mi_perfil}>
             <img alt="mi avatar" src="/assets/images/avatar-de-usuario.png" />
             <img alt="icono rol" src="/assets/images/culo_rol.png" />
-            <span>{playerName} ({miRol || 'Sin Rol'})</span>
+            <span>{playerName} ({miRol || 'Sin Rol'}) — ({misPuntos}) pts</span>
          </div>
          <div className={styles['timer-container']}>
           <div 
