@@ -235,7 +235,7 @@ class Sala extends EventEmitter {
             // Borrar las cartas del Destino
             const idsCartasJD = []
             cartasFromJD.forEach(c => {
-                idsCartasJD.push(c.id)
+                if(c) idsCartasJD.push(c.id)
             })
             jugadorDestino.mano = jugadorDestino.mano.filter(carta => !idsCartasJD.includes(carta.id));
                 

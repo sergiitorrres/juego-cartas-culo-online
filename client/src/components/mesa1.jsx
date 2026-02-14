@@ -122,7 +122,7 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
     );
     });
 
-    socket.on("fin_ronda", (data) => {
+    socket.on("fin_ronda", async (data) => {
       let miRolNuevo = ROLES.NEUTRO;
 
       data.ranking.forEach(entry => {
@@ -140,41 +140,17 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
 
       setMiRol(miRolNuevo);
 
-      limpiandoMesaRef.current = true;
-      setTimeout(() => {
-        setCartaMesa([]);
-        setUltimoJugadorId(null);
-        setUltimaJugada([]);
-
-        limpiandoMesaRef.current = false;
-        setTimeout(() => { // No procesar en mismo tick (Posible bug visual?)
-          procesarCola();
-        }, 5);
-      }, 1800);
-
-      // Reset Ha Pasado
+      await limpiarMesaAsync();
+      procesarCola();
       resetHaPasado();
     }) 
     
-    socket.on("mesa_limpia", (data) => {
-      const motivo = data.motivo; // Probablemente no necesario
-
-      limpiandoMesaRef.current = true;
-      setTimeout(() => {
-        setCartaMesa([]);
-        setUltimoJugadorId(null);
-        setUltimaJugada([]);
-
-        limpiandoMesaRef.current = false;
-        setHacerBarrido(true);
-        setTimeout(() => { // No procesar en mismo tick (Posible bug visual?)
-          procesarCola();
-        }, 5);
-      }, 1800);
-
-      setUltimoJugadorId(null);
+    socket.on("mesa_limpia", async (data) => {
+      await limpiarMesaAsync();
+      procesarCola();
       resetHaPasado();
-    })
+    });
+
 
     // ======= INTERCAMBIOS =======
 
@@ -336,45 +312,71 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
 
   // === Funciones para la gestion de jugadas ===
 
-  const procesarCola = () => {
+  const procesarCola = async () => {
     if (procesandoRef.current) return;
-    if (limpiandoMesaRef.current) return;
     if (colaJugadasRef.current.length === 0) return;
 
     procesandoRef.current = true;
 
-    const siguiente = colaJugadasRef.current.shift();
-    aplicarJugada(siguiente);
-
-    // pequeño delay opcional para animación
-    setTimeout(() => {
-      procesandoRef.current = false;
-      setTimeout(() => { // No procesar en mismo tick (Posible bug visual?)
-        procesarCola();
-      }, 5);
-    }, 1000);
-  };
-
-  const aplicarJugada = (data) => {
-    setHacerBarrido(false);
-    setCartaMesa(data.cartas);
-    setUltimoJugadorId(data.jugadorId);
-
-    if (data.jugadorId === socket.id) {
-      setMisCartas(prev =>
-        prev.filter(c => !data.cartas.find(dc => dc.id === c.id))
-      );
-      setSeleccionadas([]);
-    } else {
-      setRivales(prev =>
-        prev.map(r =>
-          r.id === data.jugadorId
-            ? { ...r, numCartas: r.numCartas - data.cartas.length }
-            : r
-        )
-      );
+    while (
+      colaJugadasRef.current.length > 0 &&
+      !limpiandoMesaRef.current
+    ) {
+      const siguiente = colaJugadasRef.current.shift();
+      await aplicarJugadaAsync(siguiente);
     }
+
+    procesandoRef.current = false;
   };
+
+
+  const aplicarJugadaAsync = (data) => {
+    return new Promise((resolve) => {
+
+      setHacerBarrido(false);
+      setCartaMesa(data.cartas);
+      setUltimoJugadorId(data.jugadorId);
+
+      if (data.jugadorId === socket.id) {
+        setMisCartas(prev =>
+          prev.filter(c => !data.cartas.find(dc => dc.id === c.id))
+        );
+        setSeleccionadas([]);
+      } else {
+        setRivales(prev =>
+          prev.map(r =>
+            r.id === data.jugadorId
+              ? { ...r, numCartas: r.numCartas - data.cartas.length }
+              : r
+          )
+        );
+      }
+
+      // Esperamos exactamente lo que dura la animación
+      setTimeout(() => {
+        resolve();
+      }, 900); // ajusta al tiempo real de la animación
+    });
+  };
+
+  const limpiarMesaAsync = () => {
+    return new Promise((resolve) => {
+      limpiandoMesaRef.current = true;
+
+      setHacerBarrido(true);
+
+      setTimeout(() => {
+        setCartaMesa([]);
+        setUltimoJugadorId(null);
+        setUltimaJugada([]);
+
+        limpiandoMesaRef.current = false;
+        resolve();
+      }, 1800);
+    });
+  };
+
+
 
   return (
     // CONTENEDOR PADRE
