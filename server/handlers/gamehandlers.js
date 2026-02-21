@@ -174,9 +174,11 @@ function lanzaCarta(io, sala, salaId, cartasJugadas, idJugador) {
     jugador.mano = jugador.mano.filter(c => !idsCartasJugadas.includes(c.id));
 
     // Avisar a todos
+    mesa.updateIdEventos();
     io.to(salaId).emit("jugada_valida", { 
         jugadorId: idJugador, 
-        cartas: cartasJugadas
+        cartas: cartasJugadas,
+        idEvento: mesa.idEventos
     });
 
     // Si el jugador se queda sin cartas
@@ -203,7 +205,11 @@ function lanzaCarta(io, sala, salaId, cartasJugadas, idJugador) {
         mesa.reset();
         sala.jugadoresResetPass();
         plin = false;
-        io.to(salaId).emit("mesa_limpia", { motivo: esDosDeOros ? "2 de Oros" : "Jugador terminó" });
+        mesa.updateIdEventos();
+        io.to(salaId).emit("mesa_limpia", { 
+            motivo: esDosDeOros ? "2 de Oros" : "Jugador terminó",
+            idEvento: mesa.idEventos
+         });
         
         // Si tiro 2 de oros y sigue jugando, repite turno
         if (esDosDeOros && jugador.mano.length > 0) {
@@ -224,7 +230,11 @@ function lanzaCarta(io, sala, salaId, cartasJugadas, idJugador) {
     if (mesa.ultimoJugador && nextJ && nextJ.id === mesa.ultimoJugador.id) {
         mesa.reset();
         sala.jugadoresResetPass();
-        io.to(salaId).emit("mesa_limpia", { motivo: "Nadie ha tirado cartas" });
+        mesa.updateIdEventos();
+        io.to(salaId).emit("mesa_limpia", { 
+            motivo: "Nadie ha tirado cartas",
+            idEvento: mesa.idEventos
+        });
     }
 
     if(nextJ) { 
@@ -258,7 +268,11 @@ function accionPasar (salaId, sala, io, idJugador){
         if(mesa.ultimoJugador && nextJ && nextJ.id === mesa.ultimoJugador.id) {
             mesa.reset()
             sala.jugadoresResetPass()
-            io.to(salaId).emit("mesa_limpia", {motivo: "Nadie ha tirado cartas"})
+            mesa.updateIdEventos();
+            io.to(salaId).emit("mesa_limpia", {
+                motivo: "Nadie ha tirado cartas",
+                idEvento: mesa.idEventos
+            })
         }
         io.to(salaId).emit("turno_jugador", {turno: nextJ.id, esPrimero: false})
 

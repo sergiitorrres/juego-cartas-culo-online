@@ -31,7 +31,7 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
   const [rankingFinal, setRankingFinal] = useState([]);
   const [mostrarRankingFinal, setMostrarRankingFinal] = useState(false);
 
-
+  const ultimoEvento = useRef(-1);
   const limpiandoMesaRef = useRef(false);
   const colaJugadasRef = useRef([]);   // Cola de jugadas pendientes
   const procesandoRef = useRef(false);
@@ -146,7 +146,7 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
     }) 
     
     socket.on("mesa_limpia", async (data) => {
-      await limpiarMesaAsync();
+      await limpiarMesaAsync(data.idEvento);
       procesarCola();
       resetHaPasado();
     });
@@ -323,7 +323,10 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
       !limpiandoMesaRef.current
     ) {
       const siguiente = colaJugadasRef.current.shift();
-      await aplicarJugadaAsync(siguiente);
+      if(siguiente.idEvento > ultimoEvento.current) {
+        ultimoEvento.current = siguiente.idEvento;
+        await aplicarJugadaAsync(siguiente);
+      }
     }
 
     procesandoRef.current = false;
@@ -359,16 +362,18 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
     });
   };
 
-  const limpiarMesaAsync = () => {
+  const limpiarMesaAsync = (idEvento) => {
     return new Promise((resolve) => {
       limpiandoMesaRef.current = true;
 
       setHacerBarrido(true);
 
       setTimeout(() => {
-        setCartaMesa([]);
-        setUltimoJugadorId(null);
-        setUltimaJugada([]);
+        if(idEvento > ultimoEvento.current) {
+          setCartaMesa([]);
+          setUltimoJugadorId(null);
+          setUltimaJugada([]);
+        }
 
         limpiandoMesaRef.current = false;
         resolve();
