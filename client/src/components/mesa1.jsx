@@ -15,7 +15,7 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
   const [estado,setEstado] = useState(ESTADOS.LOBBY);
   const [turno,setTurno] = useState ();
   const [cartasMesa, setCartaMesa] = useState([]);
-  const [miRol, setMiRol] = useState();
+  const [miRol, setMiRol] = useState(ROLES.NEUTRO);
   const [misPuntos, setMisPuntos] = useState(0);
   const [seleccionadas, setSeleccionadas] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
@@ -467,7 +467,7 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
         <span className={styles.nombre_rival}>{rival.nombre}</span>
         
         {/* AVATAR PEQUEÑO (FIJADO POR CSS) */}
-        <img alt="avatar" className={styles.avatar} src="/assets/images/avatar-de-usuario.png" />
+        <img alt="avatar" className={styles.avatar} src={`/assets/images/${rival.rol}_rol.png`} />
         
         {/* BARRA DE TIEMPO RIVAL */}
         <div className={styles['timer-container']}>
@@ -610,7 +610,7 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
 
          <div className={styles.mi_perfil}>
             <img alt="mi avatar" src="/assets/images/avatar-de-usuario.png" />
-            <img alt="icono rol" src="/assets/images/culo_rol.png" />
+            <img alt="icono rol" src={`/assets/images/${miRol}_rol.png`} />
             <span>{playerName} ({miRol || 'Sin Rol'}) — ({misPuntos}) pts</span>
          </div>
          <div className={styles['timer-container']}>
