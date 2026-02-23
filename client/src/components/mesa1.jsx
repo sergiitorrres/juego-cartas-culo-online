@@ -140,7 +140,7 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
 
       setMiRol(miRolNuevo);
 
-      await limpiarMesaAsync(data.idEvento);
+      await limpiarMesaAsync(0, true);
       procesarCola();
       resetHaPasado();
     }) 
@@ -362,7 +362,7 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
     });
   };
 
-  const limpiarMesaAsync = (idEvento) => {
+  const limpiarMesaAsync = (idEvento, bool) => {
     return new Promise((resolve) => {
       limpiandoMesaRef.current = true;
 
@@ -373,6 +373,11 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
           setCartaMesa([]);
           setUltimoJugadorId(null);
           setUltimaJugada([]);
+        } else if (bool) {
+          setCartaMesa([]);
+          setUltimoJugadorId(null);
+          setUltimaJugada([]);
+          colaJugadasRef.current = [];
         }
 
         limpiandoMesaRef.current = false;
