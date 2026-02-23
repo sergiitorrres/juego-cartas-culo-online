@@ -5,6 +5,17 @@ const Sala = require("../game/sala");
 const { ESTADOS } = require("../game/constantes");
 const { func } = require("prop-types");
 
+const fs = require("fs");
+const path = require("path");
+
+const botNames = fs.readFileSync(
+    path.join(__dirname, "botNames.txt"),
+    "utf-8"
+)
+.split("\n")
+.map(n => n.trim())
+.filter(Boolean);
+
 const obtenerSalasPublicas = () => {
     
     return Object.values(rooms)
@@ -69,7 +80,7 @@ module.exports = (io, socket) => {
             }
         }
 
-        rooms[salaId] = new Sala(salaId, config,privacidad);
+        rooms[salaId] = new Sala(salaId, config, privacidad, botNames);
         console.log(`Sala iniciada: ${salaId}`);
         
         const partida = rooms[salaId];
