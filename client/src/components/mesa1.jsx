@@ -140,7 +140,7 @@ const Mesa = ({playerName, socket, numMaxJugadores}) => {
 
       setMiRol(miRolNuevo);
 
-      await limpiarMesaAsync();
+      await limpiarMesaAsync(data.idEvento);
       procesarCola();
       resetHaPasado();
     }) 

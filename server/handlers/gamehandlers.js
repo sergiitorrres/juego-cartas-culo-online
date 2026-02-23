@@ -302,7 +302,9 @@ function finalizarRonda(sala, io, salaId) {
         terminarSala(io, sala, salaId)
         return;
     } else {
-        io.to(salaId).emit("fin_ronda", { ranking: infoRanking.info });
+        mesa = sala.mesa;
+        mesa.updateIdEventos();
+        io.to(salaId).emit("fin_ronda", { ranking: infoRanking.info, idEvento: mesa.idEvento});
     }
 
     setTimeout(() => {  // En 5 segundos empiza la siguiente ronda
