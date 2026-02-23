@@ -17,6 +17,7 @@ module.exports = (io, socket) => {
 
         const resultado = sala.iniciar_partida();
 
+
         if (resultado.error) {
             return socket.emit("error", { mensaje: resultado.error });
         }
@@ -48,6 +49,7 @@ module.exports = (io, socket) => {
         const sala = rooms[salaId]
 
         lanzaCarta(io, sala, salaId, cartasJugadas, socket.id)
+        
     });
 
 
@@ -63,7 +65,7 @@ module.exports = (io, socket) => {
             return socket.emit("error", {mensaje: "No puedes saktar en el primer turno"})
         }
 
-
+        sala.iniciarTimer();
         accionPasar(salaId, sala, io, socket.id);
 
         
@@ -175,6 +177,7 @@ function lanzaCarta(io, sala, salaId, cartasJugadas, idJugador) {
 
     // Avisar a todos
     mesa.updateIdEventos();
+    mesa.detenerTimer();
     io.to(salaId).emit("jugada_valida", { 
         jugadorId: idJugador, 
         cartas: cartasJugadas,
@@ -275,6 +278,7 @@ function accionPasar (salaId, sala, io, idJugador){
             })
         }
         io.to(salaId).emit("turno_jugador", {turno: nextJ.id, esPrimero: false})
+        mesa.detenerTimer();
 
         ejecutarBot(io, sala, salaId)
 }

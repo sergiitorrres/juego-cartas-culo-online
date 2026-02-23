@@ -34,7 +34,11 @@ class Sala extends EventEmitter {
         this.usarMazoGrande = false;
 
         // BOTS
-        this.botNames = [...botNames]
+        this.botNames = [...botNames];
+
+        // TIMER
+        this.timer = null;
+        this.timerAmount = 15000;
 
     }
 
@@ -339,6 +343,17 @@ class Sala extends EventEmitter {
         });
 
         this.repartirCartas();
+    }
+
+    iniciarTimer() {
+        this.timer = setTimeout(() => {
+            
+        }, this.timerAmount); 
+    }
+
+    detenerTimer() {
+        clearTimeout(this.timer);
+        timer = null;
     }
 }
 
